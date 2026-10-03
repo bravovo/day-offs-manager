@@ -22,7 +22,7 @@ export const postSignIn = async (
 
     if (
       [email, firstName, lastName, password, confirmPassword].some((value) => {
-        typeof value !== "string";
+        return typeof value !== "string";
       })
     ) {
       const error: AppError = new Error(
