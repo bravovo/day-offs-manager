@@ -20,9 +20,21 @@ export const postSignIn = async (
       gender,
     }: CreateUserDTO = req.body;
 
+    if (
+      [email, firstName, lastName, password, confirmPassword].some((value) => {
+        typeof value !== "string";
+      })
+    ) {
+      const error: AppError = new Error(
+        "Надані дані неправильного формату"
+      ) as AppError;
+      error.status = 400;
+
+      throw error;
+    }
+
     if (password !== confirmPassword) {
       const error: AppError = new Error("Паролі не співпадають") as AppError;
-
       error.status = 400;
 
       throw error;
@@ -32,7 +44,6 @@ export const postSignIn = async (
       const error: AppError = new Error(
         "Пароль повинен мати мінімум 8 символів"
       ) as AppError;
-
       error.status = 400;
 
       throw error;
@@ -42,7 +53,6 @@ export const postSignIn = async (
 
     if (gender && !["male", "female"].includes(gender)) {
       const error: AppError = new Error("Обрано не існуючу стать") as AppError;
-
       error.status = 400;
 
       throw error;

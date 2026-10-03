@@ -1,25 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
-import { signUp } from "@/app/sign-up/actions";
+//TODO додати сторінку авторизації та її функціонал
 
 export default function SignIn() {
-  const [state, formAction, isPending] = useActionState(signUp, {
-    error: undefined,
-    success: undefined,
-  });
-
-  if (isPending) {
-    return <h2>Завантаження...</h2>;
-  }
-
   return (
     <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans">
       <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-center px-1">
-        <form
-          action={formAction}
-          className="w-full md:w-md flex flex-col gap-2 border border-zinc-500 rounded-2xl"
-        >
+        <form className="w-full md:w-md flex flex-col gap-2 border border-zinc-500 rounded-2xl">
           <div className="w-full px-7 pt-2">
             <h3 className="font-bold text-2xl">Авторизація</h3>
           </div>
@@ -56,8 +43,6 @@ export default function SignIn() {
             >
               Створити акаунт
             </button>
-            {state.error && <p>{state.error}</p>}
-            {state.success && <p>{state.success}</p>}
           </div>
         </form>
       </main>

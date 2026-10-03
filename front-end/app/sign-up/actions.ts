@@ -53,7 +53,9 @@ export async function signUp(
     }
   } catch (error: unknown) {
     if (isAxiosError(error)) {
-      return { error: error.response?.data?.message };
+      return {
+        error: error.response?.data?.message || "Помилка створення користувача",
+      };
     }
     return { error: "Помилка з'єднання" };
   }

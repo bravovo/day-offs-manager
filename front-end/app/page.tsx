@@ -8,7 +8,7 @@ export default async function Home() {
         <Link href="/sign-up" prefetch={false}>
           Створити акаунт
         </Link>
-        <Link href="/sign-in" prefetch={false}>
+        <Link href="/login" prefetch={false}>
           Авторизуватись
         </Link>
       </main>

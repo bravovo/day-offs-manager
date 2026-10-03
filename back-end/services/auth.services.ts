@@ -15,7 +15,6 @@ export const createUserService = async (user: UserNoRole) => {
     const error: AppError = new Error(
       "Помилка створення користувача"
     ) as AppError;
-
     error.status = 500;
 
     throw error;

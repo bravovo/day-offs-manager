@@ -58,10 +58,19 @@ app.use(
       });
     }
 
+    if ("code" in err && err.code === 11000) {
+      res.status(409).json({ success: false, message: "Дані уже існують" });
+    }
+
     const status =
       "status" in err && typeof err.status === "number" ? err.status : 500;
 
-    return res.status(status).json({ success: false, message: err.message });
+    return res
+      .status(status)
+      .json({
+        success: false,
+        message: status === 500 ? "Помилка сервера" : err.message,
+      });
   }
 );
 
