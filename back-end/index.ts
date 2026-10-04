@@ -38,7 +38,7 @@ app.get("/", (_req, res, _next) => {
   res.send("API is okay");
 });
 
-app.use("/v1/auth", authRoute);
+app.use("/api/v1/auth", authRoute);
 
 app.use(
   (

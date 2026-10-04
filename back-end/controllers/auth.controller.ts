@@ -3,7 +3,11 @@ import type { Request, Response, NextFunction } from "express";
 import type { CreateUserDTO } from "../types/dto.ts";
 
 import type { AppError } from "../types/types.ts";
-import { createUserService } from "../services/auth.services.ts";
+import {
+  createUserService,
+  loginUserService,
+} from "../services/auth.services.ts";
+import { NODE_ENV } from "../configs/env.ts";
 
 export const postSignIn = async (
   req: Request,
@@ -71,7 +75,57 @@ export const postSignIn = async (
       message: "Акаунт створенно успішно",
     });
   } catch (error) {
-    console.log("EORR+OROR", error);
     next(error);
+  }
+};
+
+export const postLogin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, password } = req.body;
+
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      email.trim().length === 0 ||
+      password.trim().length === 0
+    ) {
+      const error: AppError = new Error(
+        "Відсутні дані для авторизації"
+      ) as AppError;
+      error.status = 400;
+
+      throw error;
+    }
+
+    const user = await loginUserService({ email, password });
+
+    if (user.status === 200) {
+      res.cookie("token", user.refreshToken, {
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 7 * 1000,
+        secure: NODE_ENV === "production",
+        sameSite: NODE_ENV === "production" ? "none" : "strict",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      accessToken: user.accessToken,
+      user: {
+        _id: user.data._id,
+        firstName: user.data.firstName,
+        lastName: user.data.lastName,
+        email: user.data.email,
+        role: user.data.role,
+        gender: user.data.gender || "",
+      },
+      message: "Авторизація успішна",
+    });
+  } catch (err) {
+    next(err);
   }
 };

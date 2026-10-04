@@ -3,7 +3,7 @@ import SignUp from "@/app/sign-up/components/SignUp";
 
 export const metadata: Metadata = {
   title: "Створення акаунта",
-  description: "Система контролю відпусток працівників",
+  description: "Створіть акаунт, щоб керувати відпустками",
 };
 
 export default function SignUpPageContainer() {

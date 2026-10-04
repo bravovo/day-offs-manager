@@ -1,5 +1,10 @@
 import User from "../schemas/user.schema.ts";
 import type { AppError, UserNoRole } from "../types/types.ts";
+import { generateAccessToken, generateRefreshToken } from "../utils/jwt.ts";
+import bcrypt from "bcryptjs";
+
+const DUMMY_PASSWORD_HASH =
+  "$2b$12$DqbIOSY1Qh22MqITM4EGyeMlFZY8y37jCaQ40JB1.H8vsfz08D/VS";
 
 export const createUserService = async (user: UserNoRole) => {
   const createdUser = await User.create({
@@ -19,4 +24,62 @@ export const createUserService = async (user: UserNoRole) => {
 
     throw error;
   }
+};
+
+interface LoginProps {
+  email: string;
+  password: string;
+}
+
+export const loginUserService = async (data: LoginProps) => {
+  const { email, password } = data;
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
+
+    const error: AppError = new Error("Невірні дані авторизації") as AppError;
+    error.status = 400;
+
+    throw error;
+  }
+
+  const match = await (
+    user as typeof user & {
+      comparePasswords(password: string): Promise<boolean>;
+    }
+  ).comparePasswords(password);
+
+  if (!match) {
+    const error: AppError = new Error("Невірні дані авторизації") as AppError;
+    error.status = 400;
+
+    throw error;
+  }
+
+  const refreshToken = generateRefreshToken(user.id, user.role);
+  const accessToken = generateAccessToken(user.id, user.role);
+
+  if (!accessToken || !refreshToken) {
+    const error: AppError = new Error(
+      "Генерація токенів доступу не вдалась"
+    ) as AppError;
+    error.status = 500;
+
+    throw error;
+  }
+
+  return {
+    status: 200,
+    data: {
+      _id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      gender: user.gender || "",
+    },
+    accessToken,
+    refreshToken,
+  };
 };
