@@ -53,7 +53,7 @@ export async function login(
 
     cookieStore.set("accessToken", response.data.accessToken, {
       httpOnly: true,
-      maxAge: 15 * 60,
+      maxAge: 10 * 60,
       path: "/",
       secure: isProduction,
       sameSite: "lax",

@@ -87,7 +87,12 @@ export const postLogin = async (
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      email.trim().length === 0 ||
+      password.trim().length === 0
+    ) {
       const error: AppError = new Error(
         "Відсутні дані для авторизації"
       ) as AppError;

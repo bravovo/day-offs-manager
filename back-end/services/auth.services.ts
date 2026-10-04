@@ -1,6 +1,10 @@
 import User from "../schemas/user.schema.ts";
 import type { AppError, UserNoRole } from "../types/types.ts";
 import { generateAccessToken, generateRefreshToken } from "../utils/jwt.ts";
+import bcrypt from "bcryptjs";
+
+const DUMMY_PASSWORD_HASH =
+  "$2b$12$DqbIOSY1Qh22MqITM4EGyeMlFZY8y37jCaQ40JB1.H8vsfz08D/VS";
 
 export const createUserService = async (user: UserNoRole) => {
   const createdUser = await User.create({
@@ -32,6 +36,8 @@ export const loginUserService = async (data: LoginProps) => {
   const user = await User.findOne({ email });
 
   if (!user) {
+    await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
+
     const error: AppError = new Error("Невірні дані авторизації") as AppError;
     error.status = 400;
 
