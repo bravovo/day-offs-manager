@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { signUp } from "@/app/sign-up/actions";
+import { Loader } from "@/app/components/Loader/Loader";
 
 export default function SignUp() {
   const [state, formAction, isPending] = useActionState(signUp, {
@@ -26,17 +27,19 @@ export default function SignUp() {
   };
 
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans">
-      {isPending && <h2>Завантаження...</h2>}
+    <div className="flex flex-col flex-1 items-center justify-center font-sans">
+      {isPending && <Loader />}
       <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-center px-1">
         <form
           action={formAction}
-          className="w-full md:w-md flex flex-col gap-2 border border-zinc-500 rounded-2xl"
+          className="w-full md:w-md flex flex-col gap-2 border-none rounded-2xl bg-white"
         >
           <div className="w-full px-7 pt-2">
-            <h3 className="font-bold text-2xl">Створити акаунт</h3>
+            <h3 className="font-bold text-2xl text-teal-950">
+              Створити акаунт
+            </h3>
           </div>
-          <hr className="w-full border-zinc-500" />
+          <hr className="w-full border-teal-950" />
           <div className="px-7 py-4 flex flex-col gap-2">
             <label htmlFor="email" className="flex flex-col gap-1">
               Електронна пошта
@@ -49,7 +52,7 @@ export default function SignUp() {
                   e.preventDefault();
                   handleFormDataChange("email", e.target.value);
                 }}
-                className="border border-zinc-400 rounded-md outline-none p-2"
+                className="border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
               />
             </label>
             <label htmlFor="firstName" className="flex flex-col gap-1">
@@ -63,7 +66,7 @@ export default function SignUp() {
                   e.preventDefault();
                   handleFormDataChange("firstName", e.target.value);
                 }}
-                className="border border-zinc-400 rounded-md outline-none p-2"
+                className="border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
               />
             </label>
             <label htmlFor="lastName" className="flex flex-col gap-1">
@@ -77,7 +80,7 @@ export default function SignUp() {
                   e.preventDefault();
                   handleFormDataChange("lastName", e.target.value);
                 }}
-                className="border border-zinc-400 rounded-md outline-none p-2"
+                className="border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
               />
             </label>
             <label htmlFor="password" className="flex flex-col gap-1">
@@ -91,7 +94,7 @@ export default function SignUp() {
                   e.preventDefault();
                   handleFormDataChange("password", e.target.value);
                 }}
-                className="border border-zinc-400 rounded-md outline-none p-2"
+                className="border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
               />
             </label>
             <label htmlFor="passwordConfirm" className="flex flex-col gap-1">
@@ -105,18 +108,20 @@ export default function SignUp() {
                   e.preventDefault();
                   handleFormDataChange("confirmPassword", e.target.value);
                 }}
-                className="border border-zinc-400 rounded-md outline-none p-2"
+                className="border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
               />
             </label>
 
             <button
               type="submit"
-              className="mt-2 h-10 border-none bg-zinc-950 hover:bg-zinc-600 text-white rounded-xl px-3 py-1 transition-all cursor-pointer"
+              className="mt-2 h-10 border-none bg-teal-950 hover:bg-teal-800 text-white rounded-xl 
+                px-3 py-1 transition-all cursor-pointer duration-500"
             >
               Створити акаунт
             </button>
-            {state.error && <p>{state.error}</p>}
-            {state.success && <p>{state.success}</p>}
+            {state.error && (
+              <p className="font-bold text-red-600">{state.error}</p>
+            )}
           </div>
         </form>
       </main>
