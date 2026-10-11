@@ -8,6 +8,7 @@ import {
   loginUserService,
 } from "../services/auth.services.ts";
 import { NODE_ENV } from "../configs/env.ts";
+import { generateAccessToken, verifyToken } from "../utils/jwt.ts";
 
 export const postSignIn = async (
   req: Request,
@@ -128,4 +129,35 @@ export const postLogin = async (
   } catch (err) {
     next(err);
   }
+};
+
+export const postRefresh = (req: Request, res: Response) => {
+  const refreshToken = req.cookies?.token;
+
+  if (typeof refreshToken !== "string") {
+    return res.status(401).json({
+      success: false,
+      message: "Потрібна авторизація",
+    });
+  }
+
+  const result = verifyToken(refreshToken);
+
+  if (result.error || !result.id || !result.role) {
+    return res.status(401).json({
+      success: false,
+      message: "Потрібна авторизація",
+    });
+  }
+
+  const accessToken = generateAccessToken(result.id, result.role);
+
+  if (!accessToken) {
+    return res.status(500).json({
+      success: false,
+      message: "Генерація токена доступу не вдалась",
+    });
+  }
+
+  return res.status(200).json({ success: true, accessToken });
 };
