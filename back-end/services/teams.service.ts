@@ -30,8 +30,7 @@ export const createTeamService = async (team: Team) => {
 
 export const getUserTeamsService = async (authorId: string) => {
   const teams = await MongoTeam.find({
-    "members.memberId": authorId,
-    "members.role": "super",
+    members: { $elemMatch: { memberId: authorId, role: "super" } },
   });
 
   if (!teams) {
