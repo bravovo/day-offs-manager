@@ -4,19 +4,23 @@ import type { NextRequest } from "next/server";
 import { SERVER_URL } from "@/configs/env";
 
 async function verifyAccessToken(accessToken: string) {
-  return fetch(`${SERVER_URL}/v1/auth/verify`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-    cache: "no-store",
-  });
+  try {
+    return await fetch(`${SERVER_URL}/v1/auth/verify`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      cache: "no-store",
+    });
+  } catch {
+    return null;
+  }
 }
 
 export async function proxy(request: NextRequest) {
   const accessToken = request.cookies.get("accessToken")?.value;
   const refreshToken = request.cookies.get("token")?.value;
 
-  if (accessToken && (await verifyAccessToken(accessToken)).ok) {
+  if (accessToken && (await verifyAccessToken(accessToken))?.ok) {
     return NextResponse.next();
   }
 
@@ -24,13 +28,19 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const refreshResponse = await fetch(`${SERVER_URL}/v1/auth/refresh`, {
-    method: "POST",
-    headers: {
-      Cookie: `token=${refreshToken}`,
-    },
-    cache: "no-store",
-  });
+  let refreshResponse: Response;
+
+  try {
+    refreshResponse = await fetch(`${SERVER_URL}/v1/auth/refresh`, {
+      method: "POST",
+      headers: {
+        Cookie: `token=${refreshToken}`,
+      },
+      cache: "no-store",
+    });
+  } catch {
+    return NextResponse.next();
+  }
 
   if (!refreshResponse.ok) {
     return NextResponse.next();

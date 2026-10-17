@@ -18,8 +18,8 @@ export interface User {
 export type UserNoRole = Omit<User, "role">;
 
 export interface TeamMember {
-  memberId: mongoose.Schema.Types.ObjectId;
-  role: Omit<Role, "user">;
+  memberId: mongoose.Types.ObjectId;
+  role: Exclude<Role, "user">;
 }
 export interface Team {
   title: string;

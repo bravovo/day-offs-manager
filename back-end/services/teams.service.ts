@@ -45,7 +45,9 @@ export const getUserTeamsService = async (authorId: string) => {
 };
 
 export const getTeamService = async (teamId: string, userId: string) => {
-  const team = await MongoTeam.findById(teamId);
+  const team = mongoose.isValidObjectId(teamId)
+    ? await MongoTeam.findById(teamId)
+    : null;
 
   if (!team) {
     const err: AppError = new Error("Команду не знайдено") as AppError;

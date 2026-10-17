@@ -14,7 +14,13 @@ export const postTeamController = async (
   next: NextFunction
 ) => {
   try {
-    const { title, authorId }: CreateTeamDTO = req.body;
+    if (!req.user?.id) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Потрібно авторизуватись" });
+    }
+    const authorId = String(req.user.id);
+    const { title }: CreateTeamDTO = req.body;
 
     if (!title || title.trim().length === 0) {
       return res.status(400).json({
@@ -30,11 +36,17 @@ export const postTeamController = async (
       });
     }
 
+    if (!mongoose.isValidObjectId(authorId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Некоректний автор" });
+    }
+
     const teamToCreate: Team = {
       title,
       members: [
         {
-          memberId: new mongoose.Schema.Types.ObjectId(authorId),
+          memberId: new mongoose.Types.ObjectId(authorId),
           role: "super",
         },
       ],
