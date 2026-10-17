@@ -13,7 +13,7 @@ async function verifyAccessToken(accessToken: string) {
   });
 }
 
-export async function requireAuthentication() {
+async function getValidAccessToken() {
   const cookieStore = await cookies();
   let accessToken = cookieStore.get("accessToken")?.value;
   const refreshToken = cookieStore.get("token")?.value;
@@ -37,7 +37,29 @@ export async function requireAuthentication() {
     }
   }
 
-  if (!response?.ok) {
+  return response?.ok && accessToken ? accessToken : null;
+}
+
+export async function requireAuthentication() {
+  const accessToken = await getValidAccessToken();
+
+  if (!accessToken) {
     redirect("/login");
   }
+
+  return accessToken;
+}
+
+export async function authenticatedFetch(
+  input: RequestInfo | URL,
+  init: RequestInit = {}
+) {
+  const accessToken = await requireAuthentication();
+  const headers = new Headers(init.headers);
+  headers.set("Authorization", `Bearer ${accessToken}`);
+
+  return fetch(input, {
+    ...init,
+    headers,
+  });
 }
