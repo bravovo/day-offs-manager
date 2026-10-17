@@ -8,6 +8,8 @@ import { PORT, CLIENT_ORIGIN } from "./configs/env.js";
 import type { AppError } from "./types/types.ts";
 
 import authRoute from "./routes/auth.route.ts";
+import teamsRoute from "./routes/teams.route.ts";
+import { requireAuth } from "./middleware/auth.middleware.ts";
 
 const app = express();
 
@@ -39,6 +41,10 @@ app.get("/", (_req, res, _next) => {
 });
 
 app.use("/api/v1/auth", authRoute);
+
+app.use(requireAuth);
+
+app.use("/api/v1/teams", teamsRoute);
 
 app.use(
   (

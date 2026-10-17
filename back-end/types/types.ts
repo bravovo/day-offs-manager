@@ -1,3 +1,5 @@
+import type mongoose from "mongoose";
+
 export interface AppError extends Error {
   status: number;
 }
@@ -14,3 +16,12 @@ export interface User {
 }
 
 export type UserNoRole = Omit<User, "role">;
+
+export interface TeamMember {
+  memberId: mongoose.Types.ObjectId;
+  role: Exclude<Role, "user">;
+}
+export interface Team {
+  title: string;
+  members: TeamMember[];
+}
