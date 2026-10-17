@@ -6,7 +6,7 @@ import type { AppError } from "../types/types.ts";
 import {
   createUserService,
   loginUserService,
-} from "../services/auth.services.ts";
+} from "../services/auth.service.ts";
 import { NODE_ENV } from "../configs/env.ts";
 import { generateAccessToken, verifyToken } from "../utils/jwt.ts";
 

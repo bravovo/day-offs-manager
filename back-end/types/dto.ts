@@ -6,3 +6,8 @@ export interface CreateUserDTO {
   password: string;
   confirmPassword: string;
 }
+
+export interface CreateTeamDTO {
+  title: string;
+  authorId: string;
+}
