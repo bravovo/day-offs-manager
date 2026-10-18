@@ -161,3 +161,22 @@ export const postRefresh = (req: Request, res: Response) => {
 
   return res.status(200).json({ success: true, accessToken });
 };
+
+export const postLogoutController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    res.clearCookie("token", {
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 7 * 1000,
+      secure: NODE_ENV === "production",
+      sameSite: NODE_ENV === "production" ? "none" : "strict",
+    });
+
+    return res.sendStatus(204);
+  } catch (err) {
+    next(err);
+  }
+};

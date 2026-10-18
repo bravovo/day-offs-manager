@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import {
   postLogin,
+  postLogoutController,
   postRefresh,
   postSignIn,
 } from "../controllers/auth.controller.ts";
@@ -12,6 +13,8 @@ const router = Router();
 router.post("/sign-up", postSignIn);
 
 router.post("/login", postLogin);
+
+router.post("/logout", postLogoutController);
 
 router.post("/refresh", postRefresh);
 

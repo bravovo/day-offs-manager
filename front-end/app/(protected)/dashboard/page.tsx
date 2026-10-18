@@ -1,6 +1,12 @@
 import { SERVER_URL } from "@/configs/env";
 import { authenticatedFetch } from "@/lib/auth";
 import { TeamsResponse } from "@/types/types";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Робоче середовище",
+  description: "Керуйте своїми командами та відпустками",
+};
 
 export default async function Dashboard() {
   const teamsResponse = await authenticatedFetch(`${SERVER_URL}/v1/teams`, {
