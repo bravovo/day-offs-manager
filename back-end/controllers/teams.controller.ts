@@ -5,8 +5,10 @@ import {
   getTeamService,
   getUserTeamsService,
 } from "../services/teams.service.ts";
-import type { Team } from "../types/types.ts";
+import type { Team, TeamMember } from "../types/types.ts";
 import mongoose from "mongoose";
+import { checkEmailValidity } from "../utils/utils.ts";
+import User from "../schemas/user.schema.ts";
 
 export const postTeamController = async (
   req: Request,
@@ -20,12 +22,43 @@ export const postTeamController = async (
         .json({ success: false, message: "Потрібно авторизуватись" });
     }
     const authorId = String(req.user.id);
-    const { title }: CreateTeamDTO = req.body;
+    const { title, members }: CreateTeamDTO = req.body;
 
     if (!title || title.trim().length === 0) {
       return res.status(400).json({
         success: false,
         message: "Назва команди обов'язкова",
+      });
+    }
+
+    if (!Array.isArray(members)) {
+      return res.status(400).json({
+        success: false,
+        message: "Список учасників має неправильний формат",
+      });
+    }
+
+    const validEmails = members.filter((email) => {
+      return checkEmailValidity(email);
+    });
+
+    if (validEmails.length !== members.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Список учасників містить невірно введену електронну пошту",
+      });
+    }
+
+    const existingUsers = await User.find({
+      email: { $in: validEmails },
+    }).select("email");
+
+    const hasAll = existingUsers.length === validEmails.length;
+
+    if (!hasAll) {
+      return res.status(400).json({
+        success: false,
+        message: "Список учасників містить неіснуючих користувачів",
       });
     }
 
@@ -42,6 +75,10 @@ export const postTeamController = async (
         .json({ success: false, message: "Некоректний автор" });
     }
 
+    const teamMembers: TeamMember[] = existingUsers.map((user) => {
+      return { memberId: user._id, role: "worker" };
+    });
+
     const teamToCreate: Team = {
       title,
       members: [
@@ -49,6 +86,7 @@ export const postTeamController = async (
           memberId: new mongoose.Types.ObjectId(authorId),
           role: "super",
         },
+        ...teamMembers,
       ],
     };
 

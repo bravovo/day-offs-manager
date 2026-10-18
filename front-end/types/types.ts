@@ -7,6 +7,11 @@ export interface Team {
   }>;
 }
 
+export interface CreateTeam {
+  title: string;
+  members: string[];
+}
+
 export interface TeamsResponse {
   success: boolean;
   teams: Team[];

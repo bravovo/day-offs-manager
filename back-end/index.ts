@@ -73,9 +73,13 @@ app.use(
     const status =
       "status" in err && typeof err.status === "number" ? err.status : 500;
 
+    const message = status === 500 ? "Помилка сервера" : err.message;
+
+    console.log(message);
+
     return res.status(status).json({
       success: false,
-      message: status === 500 ? "Помилка сервера" : err.message,
+      message,
     });
   }
 );

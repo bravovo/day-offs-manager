@@ -9,5 +9,5 @@ export interface CreateUserDTO {
 
 export interface CreateTeamDTO {
   title: string;
-  authorId: string;
+  members: string[];
 }
