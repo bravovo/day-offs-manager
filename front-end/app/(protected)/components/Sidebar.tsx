@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { logout } from "@/lib/auth";
+import { logout } from "@/lib/logout";
 import LogoutButton from "./LogoutButton";
 
 const navigationItems = [{ href: "/dashboard", label: "Робоче середовище" }];
