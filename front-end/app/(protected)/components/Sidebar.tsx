@@ -1,5 +1,8 @@
 import Link from "next/link";
 
+import { logout } from "@/lib/auth";
+import LogoutButton from "./LogoutButton";
+
 const navigationItems = [{ href: "/dashboard", label: "Робоче середовище" }];
 
 export default function Sidebar() {
@@ -22,17 +25,18 @@ export default function Sidebar() {
               </Link>
             </li>
           ))}
+          <li className="block md:hidden">
+            <form action={logout}>
+              <LogoutButton />
+            </form>
+          </li>
         </ul>
       </nav>
 
-      {/* TODO додати функціонал виходу з акаунта  */}
       <div className="hidden border-t border-teal-800 px-2 py-5 md:block">
-        <button
-          className="cursor-pointer text-md font-bold bg-red-900 rounded-xl px-2 py-2 w-30
-           hover:bg-red-800 transition-colors duration-200"
-        >
-          Вийти
-        </button>
+        <form action={logout}>
+          <LogoutButton />
+        </form>
       </div>
     </aside>
   );
