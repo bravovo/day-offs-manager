@@ -13,6 +13,9 @@ export async function createTeam(
   formData: FormData
 ): Promise<FormAction> {
   const title = formData.get("title");
+  const maxDayOffs = Number(formData.get("maxDayOffs"));
+  const maxSick = Number(formData.get("maxSick"));
+  const system = formData.get("system");
   const members = formData
     .getAll("members")
     .filter((member): member is string => typeof member === "string");
@@ -20,6 +23,26 @@ export async function createTeam(
   if (!title) {
     return {
       error: "Назва команди не може бути порожня",
+    };
+  }
+
+  console.log({});
+
+  if (system !== "all-in" && system !== "accum") {
+    return {
+      error: "Неправильний тип накопичення вихідних",
+    };
+  }
+
+  if (!Number.isInteger(maxDayOffs) || maxDayOffs < 0) {
+    return {
+      error: "Максимальна кількість вихідних повинна бути цілим числом від 0",
+    };
+  }
+
+  if (!Number.isInteger(maxSick) || maxSick < 0) {
+    return {
+      error: "Максимальна кількість лікарняних повинна бути цілим числом від 0",
     };
   }
 
@@ -31,6 +54,9 @@ export async function createTeam(
       },
       body: JSON.stringify({
         title,
+        maxDayOffs,
+        maxSick,
+        system,
         members,
       }),
     });

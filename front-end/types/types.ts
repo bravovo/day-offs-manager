@@ -7,8 +7,13 @@ export interface Team {
   }>;
 }
 
+export type DayOffSystem = "all-in" | "accum";
+
 export interface CreateTeam {
   title: string;
+  maxDayOffs: number;
+  maxSick: number;
+  system: DayOffSystem;
   members: string[];
 }
 

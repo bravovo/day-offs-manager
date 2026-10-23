@@ -1,3 +1,5 @@
+import type { DayOffSystem } from "./types.ts";
+
 export interface CreateUserDTO {
   email: string;
   firstName: string;
@@ -9,5 +11,8 @@ export interface CreateUserDTO {
 
 export interface CreateTeamDTO {
   title: string;
+  maxDayOffs: number;
+  maxSick: number;
+  system: DayOffSystem;
   members: string[];
 }

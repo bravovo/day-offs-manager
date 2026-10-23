@@ -7,6 +7,19 @@ const teamSchema = new Schema(
       required: true,
       unique: true,
     },
+    maxOff: {
+      type: Number,
+      required: false,
+    },
+    maxSick: {
+      type: Number,
+      required: false,
+    },
+    system: {
+      type: String,
+      required: false,
+      enum: ["all-in", "accum"],
+    },
     members: [
       {
         memberId: {

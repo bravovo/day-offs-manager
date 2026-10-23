@@ -21,7 +21,12 @@ export interface TeamMember {
   memberId: mongoose.Types.ObjectId;
   role: Exclude<Role, "user">;
 }
+
+export type DayOffSystem = "all-in" | "accum";
 export interface Team {
   title: string;
+  maxOff: number;
+  maxSick: number;
+  system: DayOffSystem;
   members: TeamMember[];
 }

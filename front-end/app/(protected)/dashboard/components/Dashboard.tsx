@@ -17,6 +17,9 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dialogData, setDialogData] = useState<CreateTeam>({
     title: "",
+    maxDayOffs: 0,
+    maxSick: 0,
+    system: "all-in",
     members: [],
   });
   const [memberEmail, setMemberEmail] = useState("");
@@ -29,7 +32,13 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
     }
 
     setIsRefreshing(true);
-    setDialogData({ title: "", members: [] });
+    setDialogData({
+      title: "",
+      maxDayOffs: 0,
+      maxSick: 0,
+      system: "all-in",
+      members: [],
+    });
     setMemberEmail("");
     setShowMemberEmailError(false);
     setCreateTeamDialogOpen(false);
@@ -41,9 +50,9 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
   }, [teams]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  const handleDialogDataChange = (type: string, value: string) => {
+  const handleDialogDataChange = (type: string, value: string | number) => {
     if (type in dialogData) {
-      if (type === "members") {
+      if (type === "members" && typeof value === "string") {
         setDialogData((prev) => {
           return { ...prev, members: [...prev.members, value] };
         });
@@ -104,15 +113,15 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
 
       {createTeamDialogOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-gray-500/80 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-gray-500/80 p-1.5 md:p-4"
           onClick={() => setCreateTeamDialogOpen(false)}
         >
           <form
             action={formAction}
-            className="w-full md:w-md flex flex-col gap-2 border-none rounded-2xl bg-white"
+            className="w-full md:w-md min-w-0 flex flex-col gap-2 border-none rounded-2xl bg-white"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="px-7 py-4 flex flex-col gap-2">
+            <div className="w-full min-w-0 px-4 md:px-7 py-4 flex flex-col gap-2">
               <label className="flex flex-col gap-1">
                 Назва *
                 <input
@@ -126,8 +135,65 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
 
                     handleDialogDataChange("title", e.target.value);
                   }}
-                  className="border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
+                  className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
                 />
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label className="min-w-0 flex flex-col gap-1">
+                  Кількість вихідних
+                  <input
+                    type="number"
+                    name="maxDayOffs"
+                    min={0}
+                    required
+                    value={
+                      dialogData.maxDayOffs < 0 ? 0 : dialogData.maxDayOffs
+                    }
+                    onChange={(e) => {
+                      e.preventDefault();
+
+                      handleDialogDataChange(
+                        "maxDayOffs",
+                        Number(e.target.value)
+                      );
+                    }}
+                    className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
+                  />
+                </label>
+                <label className="min-w-0 flex flex-col gap-1">
+                  Кількість лікарняних
+                  <input
+                    type="number"
+                    name="maxSick"
+                    min={0}
+                    required
+                    value={dialogData.maxSick < 0 ? 0 : dialogData.maxSick}
+                    onChange={(e) => {
+                      e.preventDefault();
+
+                      handleDialogDataChange("maxSick", Number(e.target.value));
+                    }}
+                    className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
+                  />
+                </label>
+              </div>
+              <label className="flex flex-col gap-1">
+                Тип накопичення вихідних
+                <select
+                  name="system"
+                  value={dialogData.system}
+                  onChange={(e) =>
+                    handleDialogDataChange("system", e.target.value)
+                  }
+                  className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
+                >
+                  <option value="all-in">
+                    Повний (усі вихідні доступні одразу)
+                  </option>
+                  <option value="accum">
+                    Накопичувальний (вихідні додаються кожного місяця)
+                  </option>
+                </select>
               </label>
               <label className="flex flex-col gap-1">
                 Додати учасника (необов&apos;язково)
@@ -172,6 +238,9 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                   </button>
                 </div>
               </label>
+              <span className="text-xs">
+                Введіть електронну пошту учасника та натисніть кнопку +
+              </span>
               {showMemberEmailError && (
                 <p className="font-bold text-red-600">
                   {memberEmail.trim().length === 0

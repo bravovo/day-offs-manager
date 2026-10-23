@@ -22,12 +22,36 @@ export const postTeamController = async (
         .json({ success: false, message: "Потрібно авторизуватись" });
     }
     const authorId = String(req.user.id);
-    const { title, members }: CreateTeamDTO = req.body;
+    const { title, maxDayOffs, maxSick, system, members }: CreateTeamDTO =
+      req.body;
 
     if (!title || title.trim().length === 0) {
       return res.status(400).json({
         success: false,
         message: "Назва команди обов'язкова",
+      });
+    }
+
+    if (typeof maxDayOffs !== "number" || maxDayOffs < 0) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Максимальна кількість вихідних повинна бути цілим числом від 0",
+      });
+    }
+
+    if (typeof maxSick !== "number" || maxSick < 0) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Максимальна кількість лікарняних повинна бути цілим числом від 0",
+      });
+    }
+
+    if (!system || (system.trim() !== "all-in" && system.trim() !== "accum")) {
+      return res.status(400).json({
+        success: false,
+        message: "Неправильний тип накопичення вихідних",
       });
     }
 
@@ -81,6 +105,9 @@ export const postTeamController = async (
 
     const teamToCreate: Team = {
       title,
+      maxOff: maxDayOffs,
+      maxSick,
+      system,
       members: [
         {
           memberId: new mongoose.Types.ObjectId(authorId),
