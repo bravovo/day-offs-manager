@@ -3,10 +3,14 @@
 import { Loader } from "@/app/components/Loader/Loader";
 import { CreateTeam, TeamsResponse } from "@/types/types";
 import { useActionState, useEffect, useState } from "react";
-import { createTeam, editTeam } from "@/app/(protected)/dashboard/actions";
+import {
+  createTeam,
+  deleteTeam,
+  editTeam,
+} from "@/app/(protected)/dashboard/actions";
 import { EMAIL_REGEX } from "@/constants/constants";
 import { useRouter } from "next/navigation";
-import { Plus, Settings } from "lucide-react";
+import { Plus, Settings, Trash } from "lucide-react";
 
 const MEMBER_EMAIL_REGEX_ERROR = "Електрона пошта учасника не правильна";
 const MEMBER_EMAIL_EMPTY_ERROR = "Потрібно ввести електронну пошту учасника";
@@ -15,10 +19,17 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
   const router = useRouter();
   const [createTeamDialogOpen, setCreateTeamDialogOpen] = useState(false);
   const [editTeamDialogOpen, setEditTeamDialogOpen] = useState(false);
+  const [confirmTeamDeleteDialogOpen, setConfirmTeamDeleteDialogOpen] =
+    useState(false);
+  const [teamToDelete, setTeamToDelete] = useState<string | null>(null);
   const [teamToEdit, setTeamToEdit] = useState(teams[0]);
   const [state, formAction, isPending] = useActionState(createTeam, {});
   const [updateState, editFormAction, isEditPending] = useActionState(
     editTeam,
+    {}
+  );
+  const [deleteState, deleteFormAction, isDeletePending] = useActionState(
+    deleteTeam,
     {}
   );
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -73,6 +84,16 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
     setEditTeamDialogOpen(false);
     router.refresh();
   }, [router, updateState]);
+
+  useEffect(() => {
+    if (!deleteState.success) {
+      return;
+    }
+
+    setIsRefreshing(true);
+    setConfirmTeamDeleteDialogOpen(false);
+    router.refresh();
+  }, [router, deleteState]);
 
   useEffect(() => {
     setIsRefreshing(false);
@@ -137,24 +158,36 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                       Учасників: {team.members.length}
                     </p>
                   </div>
-                  <button
-                    className="bg-teal-900 hover:bg-teal-700 text-white font-bold px-2 py-2 
+                  <div className="flex gap-1">
+                    <button
+                      className="bg-red-900 hover:bg-red-800 text-white font-bold px-2 py-2 
                       rounded-md transition-all cursor-pointer duration-200"
-                    onClick={() => {
-                      setTeamToEdit(team);
-                      setDialogData({
-                        id: team._id,
-                        title: team.title,
-                        maxDayOffs: team.maxOff,
-                        maxSick: team.maxSick,
-                        system: team.system,
-                        members: [],
-                      });
-                      setEditTeamDialogOpen(true);
-                    }}
-                  >
-                    <Settings className="hover:rotate-180 duration-500" />
-                  </button>
+                      onClick={() => {
+                        setConfirmTeamDeleteDialogOpen(true);
+                        setTeamToDelete(team._id);
+                      }}
+                    >
+                      <Trash />
+                    </button>
+                    <button
+                      className="bg-teal-900 hover:bg-teal-700 text-white font-bold px-2 py-2 
+                      rounded-md transition-all cursor-pointer duration-200"
+                      onClick={() => {
+                        setTeamToEdit(team);
+                        setDialogData({
+                          id: team._id,
+                          title: team.title,
+                          maxDayOffs: team.maxOff,
+                          maxSick: team.maxSick,
+                          system: team.system,
+                          members: [],
+                        });
+                        setEditTeamDialogOpen(true);
+                      }}
+                    >
+                      <Settings className="hover:rotate-180 duration-500" />
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -314,7 +347,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
               <button
                 type="submit"
                 className="mt-2 h-10 border-none bg-teal-950 hover:bg-teal-800 text-white rounded-xl 
-                px-3 py-1 transition-all cursor-pointer duration-500"
+                  px-3 py-1 transition-all cursor-pointer duration-500"
                 disabled={isPending}
               >
                 {isPending ? "Створення команди..." : "Створити команду"}
@@ -480,14 +513,59 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
               <button
                 type="submit"
                 className="mt-2 h-10 border-none bg-teal-950 hover:bg-teal-800 text-white rounded-xl 
-                px-3 py-1 transition-all cursor-pointer duration-500"
-                disabled={isPending}
+                  px-3 py-1 transition-all cursor-pointer duration-500"
+                disabled={isEditPending}
               >
                 {isEditPending ? "Збереження змін..." : "Зберегти зміни"}
               </button>
               {updateState.error && (
                 <p className="font-bold text-red-600">{updateState.error}</p>
               )}
+            </div>
+          </form>
+        </div>
+      )}
+
+      {teamToDelete && confirmTeamDeleteDialogOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-gray-500/80 p-1.5 md:p-4"
+          onClick={() => setConfirmTeamDeleteDialogOpen(false)}
+        >
+          <form
+            action={deleteFormAction}
+            className="w-full md:w-100 min-w-0 flex flex-col gap-2 border-none rounded-2xl bg-white"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <input type="hidden" name="id" value={teamToDelete || ""} />
+            <div
+              className="w-full min-w-0 px-4 md:px-7 py-4 flex flex-col gap-5
+            "
+            >
+              <strong>Ви впевнені, що хочете видалити команду?</strong>
+
+              {deleteState.error && (
+                <p className="font-bold text-red-600">{deleteState.error}</p>
+              )}
+
+              <div className="flex gap-1 justify-between">
+                <button
+                  type="button"
+                  className="mt-2 h-10 border-none bg-teal-950 hover:bg-teal-800 text-white rounded-xl 
+                    px-3 py-1 transition-all cursor-pointer duration-500"
+                  disabled={isDeletePending}
+                  onClick={() => setConfirmTeamDeleteDialogOpen(false)}
+                >
+                  Скасувати
+                </button>
+                <button
+                  type="submit"
+                  className="mt-2 h-10 border-none bg-red-900 hover:bg-red-800 text-white rounded-xl 
+                    px-3 py-1 transition-all cursor-pointer duration-500"
+                  disabled={isDeletePending}
+                >
+                  {isDeletePending ? "Видалення..." : "Видалити"}
+                </button>
+              </div>
             </div>
           </form>
         </div>

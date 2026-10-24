@@ -142,3 +142,36 @@ export async function editTeam(
 
   return { success: true };
 }
+
+export async function deleteTeam(
+  _previousState: FormAction,
+  formData: FormData
+): Promise<FormAction> {
+  const id = formData.get("id");
+
+  if (!id) {
+    return {
+      error: "Помилка видалення команди",
+    };
+  }
+
+  try {
+    const response = await authenticatedFetch(`${SERVER_URL}/v1/teams/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const data: { message?: string } = await response.json();
+      return {
+        error: data.message || "Помилка видалення команди",
+      };
+    }
+  } catch {
+    return { error: "Помилка з'єднання" };
+  }
+
+  return { success: true };
+}

@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import type { CreateTeamDTO, EditTeamDTO } from "../types/dto.ts";
 import {
   createTeamService,
+  deleteTeamService,
   getTeamService,
   getUserTeamsService,
   updateTeamService,
@@ -306,6 +307,37 @@ export const updateTeamController = async (
       message: "Команду успішно оновлено",
       updatedTeam,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteTeamController = async (
+  req: Request<{ teamId: string }>,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Потрібно авторизуватись",
+      });
+    }
+
+    const { teamId } = req.params;
+    const { id } = req.user;
+
+    if (!teamId) {
+      return res.status(400).json({
+        success: false,
+        message: "Ідентифікатора команди не надано",
+      });
+    }
+
+    await deleteTeamService(teamId, id);
+
+    return res.sendStatus(204);
   } catch (error) {
     next(error);
   }

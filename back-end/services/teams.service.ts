@@ -129,3 +129,48 @@ export const updateTeamService = async (updatedTeam: Team, userId: string) => {
 
   return freshTeamData;
 };
+
+export const deleteTeamService = async (teamId: string, userId: string) => {
+  const team = mongoose.isValidObjectId(teamId)
+    ? await MongoTeam.findById(teamId)
+    : null;
+
+  if (!team) {
+    const err: AppError = new Error("Команду не знайдено") as AppError;
+
+    err.status = 404;
+    throw err;
+  }
+
+  const isTeamSuperAdmin = team.members.some((m) => {
+    return String(m.memberId) === userId && m.role === "super";
+  });
+
+  if (!isTeamSuperAdmin) {
+    const err: AppError = new Error("Команду не знайдено") as AppError;
+
+    err.status = 404;
+    throw err;
+  }
+
+  const session = await mongoose.startSession();
+  let deletedTeam = null;
+  try {
+    session.startTransaction();
+
+    deletedTeam = await MongoTeam.deleteOne({ _id: team._id });
+
+    await session.commitTransaction();
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
+
+  if (!deletedTeam) {
+    throw new Error("Помилка видалення команди");
+  }
+
+  return deletedTeam;
+};
