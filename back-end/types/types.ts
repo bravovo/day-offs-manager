@@ -23,7 +23,9 @@ export interface TeamMember {
 }
 
 export type DayOffSystem = "all-in" | "accum";
+
 export interface Team {
+  id?: string;
   title: string;
   maxOff: number;
   maxSick: number;

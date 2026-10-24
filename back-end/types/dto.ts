@@ -16,3 +16,5 @@ export interface CreateTeamDTO {
   system: DayOffSystem;
   members: string[];
 }
+
+export interface EditTeamDTO extends CreateTeamDTO {}

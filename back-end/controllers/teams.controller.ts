@@ -1,9 +1,10 @@
 import type { NextFunction, Request, Response } from "express";
-import type { CreateTeamDTO } from "../types/dto.ts";
+import type { CreateTeamDTO, EditTeamDTO } from "../types/dto.ts";
 import {
   createTeamService,
   getTeamService,
   getUserTeamsService,
+  updateTeamService,
 } from "../services/teams.service.ts";
 import type { Team, TeamMember } from "../types/types.ts";
 import mongoose from "mongoose";
@@ -192,6 +193,118 @@ export const getTeamController = async (
       success: true,
       message: "Команду успішно знайдено",
       team,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateTeamController = async (
+  req: Request<{ teamId: string }>,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Потрібно авторизуватись",
+      });
+    }
+
+    const { teamId } = req.params;
+    const { id } = req.user;
+
+    if (!teamId) {
+      return res.status(400).json({
+        success: false,
+        message: "Ідентифікатора команди не надано",
+      });
+    }
+
+    const { title, maxDayOffs, maxSick, system, members }: EditTeamDTO =
+      req.body;
+
+    if (!title || title.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Назва команди обов'язкова",
+      });
+    }
+
+    if (typeof maxDayOffs !== "number" || maxDayOffs < 0) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Максимальна кількість вихідних повинна бути цілим числом від 0",
+      });
+    }
+
+    if (typeof maxSick !== "number" || maxSick < 0) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Максимальна кількість лікарняних повинна бути цілим числом від 0",
+      });
+    }
+
+    if (!system || (system.trim() !== "all-in" && system.trim() !== "accum")) {
+      return res.status(400).json({
+        success: false,
+        message: "Неправильний тип накопичення вихідних",
+      });
+    }
+
+    if (!Array.isArray(members)) {
+      return res.status(400).json({
+        success: false,
+        message: "Список учасників має неправильний формат",
+      });
+    }
+
+    const validEmails = members.filter((email) => {
+      return checkEmailValidity(email);
+    });
+
+    if (validEmails.length !== members.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Список учасників містить невірно введену електронну пошту",
+      });
+    }
+
+    const existingUsers = await User.find({
+      email: { $in: validEmails },
+    }).select("email");
+
+    const hasAll = existingUsers.length === validEmails.length;
+
+    if (!hasAll) {
+      return res.status(400).json({
+        success: false,
+        message: "Список учасників містить неіснуючих користувачів",
+      });
+    }
+
+    const teamMembers: TeamMember[] = existingUsers.map((user) => {
+      return { memberId: user._id, role: "worker" };
+    });
+
+    const teamToUpdate: Team = {
+      id: teamId,
+      title,
+      maxOff: maxDayOffs,
+      maxSick,
+      system,
+      members: [...teamMembers],
+    };
+
+    const updatedTeam = await updateTeamService(teamToUpdate, id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Команду успішно оновлено",
+      updatedTeam,
     });
   } catch (error) {
     next(error);

@@ -53,6 +53,7 @@ app.use(
     res: express.Response,
     _next: express.NextFunction
   ) => {
+    console.log(err);
     if (err instanceof mongoose.Error.ValidationError) {
       const errorMessage = Object.values(err.errors)[0].message;
 
