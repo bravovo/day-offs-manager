@@ -33,3 +33,9 @@ export interface TeamsResponse {
   success: boolean;
   teams: Team[];
 }
+
+export interface TeamResponse {
+  success: boolean;
+  message: string;
+  team: Team;
+}

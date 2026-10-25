@@ -4,7 +4,7 @@ import {
   createTeamService,
   deleteTeamService,
   getTeamService,
-  getUserTeamsService,
+  getSuperAdminTeamsService,
   updateTeamService,
 } from "../services/teams.service.ts";
 import type { Team, TeamMember } from "../types/types.ts";
@@ -127,7 +127,7 @@ export const getUserTeamsController = async (
       });
     }
 
-    const userTeams = await getUserTeamsService(id as string);
+    const userTeams = await getSuperAdminTeamsService(id as string);
 
     return res.status(200).json({
       success: true,

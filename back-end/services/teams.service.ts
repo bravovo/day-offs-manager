@@ -28,17 +28,21 @@ export const createTeamService = async (team: Team) => {
   return createdTeam;
 };
 
-export const getUserTeamsService = async (authorId: string) => {
-  const teams = await MongoTeam.find({
-    members: { $elemMatch: { memberId: authorId, role: "super" } },
-  });
-
-  if (!teams) {
-    const error: AppError = new Error("Помилка отримання команд") as AppError;
-    error.status = 500;
-
+export const getSuperAdminTeamsService = async (userId: string) => {
+  if (!mongoose.isValidObjectId(userId)) {
+    const error: AppError = new Error("Команди не знайдено") as AppError;
+    error.status = 404;
     throw error;
   }
+
+  const teams = await MongoTeam.find({
+    members: {
+      $elemMatch: {
+        memberId: userId,
+        role: "super",
+      },
+    },
+  });
 
   return teams;
 };

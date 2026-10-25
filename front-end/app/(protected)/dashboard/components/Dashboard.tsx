@@ -11,6 +11,7 @@ import {
 import { EMAIL_REGEX } from "@/constants/constants";
 import { useRouter } from "next/navigation";
 import { Plus, Settings, Trash } from "lucide-react";
+import Link from "next/link";
 
 const MEMBER_EMAIL_REGEX_ERROR = "Електрона пошта учасника не правильна";
 const MEMBER_EMAIL_EMPTY_ERROR = "Потрібно ввести електронну пошту учасника";
@@ -164,14 +165,18 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
               {teams.map((team) => (
                 <li
                   key={team._id}
-                  className="rounded-md bg-teal-800 p-3 flex items-center justify-between"
+                  className="rounded-md bg-teal-800 hover:bg-teal-600 transition-colors duration-150 p-3 flex items-center justify-between"
                 >
-                  <div>
+                  <Link
+                    href={`/teams/${team._id}`}
+                    prefetch={false}
+                    className="w-full"
+                  >
                     <p className="font-semibold">{team.title}</p>
                     <p className="text-sm text-teal-100">
                       Учасників: {team.members.length}
                     </p>
-                  </div>
+                  </Link>
                   <div className="flex gap-1">
                     <button
                       className="bg-red-900 hover:bg-red-800 text-white font-bold px-2 py-2 
