@@ -11,6 +11,7 @@ import type { Team, TeamMember } from "../types/types.ts";
 import mongoose from "mongoose";
 import { checkEmailValidity } from "../utils/utils.ts";
 import User from "../schemas/user.schema.ts";
+import { validateTeam } from "../utils/teams.ts";
 
 export const postTeamController = async (
   req: Request,
@@ -27,48 +28,19 @@ export const postTeamController = async (
     const { title, maxDayOffs, maxSick, system, members }: CreateTeamDTO =
       req.body;
 
-    if (!title || title.trim().length === 0) {
+    if (!validateTeam(req.body)) {
       return res.status(400).json({
         success: false,
-        message: "Назва команди обов'язкова",
+        message: "Введені дані в неправильному форматі",
       });
     }
 
-    if (typeof maxDayOffs !== "number" || maxDayOffs < 0) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Максимальна кількість вихідних повинна бути цілим числом від 0",
-      });
-    }
-
-    if (typeof maxSick !== "number" || maxSick < 0) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Максимальна кількість лікарняних повинна бути цілим числом від 0",
-      });
-    }
-
-    if (!system || (system.trim() !== "all-in" && system.trim() !== "accum")) {
-      return res.status(400).json({
-        success: false,
-        message: "Неправильний тип накопичення вихідних",
-      });
-    }
-
-    if (!Array.isArray(members)) {
-      return res.status(400).json({
-        success: false,
-        message: "Список учасників має неправильний формат",
-      });
-    }
-
-    const validEmails = members.filter((email) => {
+    const normalizedEmails = [...new Set(members.map((email) => email.trim()))];
+    const validEmails = normalizedEmails.filter((email) => {
       return checkEmailValidity(email);
     });
 
-    if (validEmails.length !== members.length) {
+    if (validEmails.length !== normalizedEmails.length) {
       return res.status(400).json({
         success: false,
         message: "Список учасників містить невірно введену електронну пошту",
@@ -101,9 +73,11 @@ export const postTeamController = async (
         .json({ success: false, message: "Некоректний автор" });
     }
 
-    const teamMembers: TeamMember[] = existingUsers.map((user) => {
-      return { memberId: user._id, role: "worker" };
-    });
+    const teamMembers: TeamMember[] = existingUsers
+      .filter((user) => String(user._id) !== authorId)
+      .map((user) => {
+        return { memberId: user._id, role: "worker" };
+      });
 
     const teamToCreate: Team = {
       title,
@@ -226,48 +200,19 @@ export const updateTeamController = async (
     const { title, maxDayOffs, maxSick, system, members }: EditTeamDTO =
       req.body;
 
-    if (!title || title.trim().length === 0) {
+    if (!validateTeam(req.body)) {
       return res.status(400).json({
         success: false,
-        message: "Назва команди обов'язкова",
+        message: "Введені дані в неправильному форматі",
       });
     }
 
-    if (typeof maxDayOffs !== "number" || maxDayOffs < 0) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Максимальна кількість вихідних повинна бути цілим числом від 0",
-      });
-    }
-
-    if (typeof maxSick !== "number" || maxSick < 0) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Максимальна кількість лікарняних повинна бути цілим числом від 0",
-      });
-    }
-
-    if (!system || (system.trim() !== "all-in" && system.trim() !== "accum")) {
-      return res.status(400).json({
-        success: false,
-        message: "Неправильний тип накопичення вихідних",
-      });
-    }
-
-    if (!Array.isArray(members)) {
-      return res.status(400).json({
-        success: false,
-        message: "Список учасників має неправильний формат",
-      });
-    }
-
-    const validEmails = members.filter((email) => {
+    const normalizedEmails = [...new Set(members.map((email) => email.trim()))];
+    const validEmails = normalizedEmails.filter((email) => {
       return checkEmailValidity(email);
     });
 
-    if (validEmails.length !== members.length) {
+    if (validEmails.length !== normalizedEmails.length) {
       return res.status(400).json({
         success: false,
         message: "Список учасників містить невірно введену електронну пошту",

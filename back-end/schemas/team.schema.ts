@@ -9,15 +9,15 @@ const teamSchema = new Schema(
     },
     maxOff: {
       type: Number,
-      required: false,
+      required: true,
     },
     maxSick: {
       type: Number,
-      required: false,
+      required: true,
     },
     system: {
       type: String,
-      required: false,
+      required: true,
       enum: ["all-in", "accum"],
     },
     members: [
@@ -25,7 +25,6 @@ const teamSchema = new Schema(
         memberId: {
           type: mongoose.Schema.Types.ObjectId,
           required: true,
-          unique: true,
           ref: "User",
         },
         role: {

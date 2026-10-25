@@ -100,6 +100,20 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
   }, [teams]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  const openCreateDialog = () => {
+    setDialogData({
+      id: undefined,
+      title: "",
+      maxDayOffs: 0,
+      maxSick: 0,
+      system: "all-in",
+      members: [],
+    });
+    setMemberEmail("");
+    setShowMemberEmailError(false);
+    setCreateTeamDialogOpen(true);
+  };
+
   const handleDialogDataChange = (type: string, value: string | number) => {
     if (type in dialogData) {
       if (type === "members" && typeof value === "string") {
@@ -125,7 +139,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
             <button
               className="bg-teal-800 hover:bg-teal-700 text-white font-bold px-2 py-2 
                       rounded-md transition-all cursor-pointer duration-200"
-              onClick={() => setCreateTeamDialogOpen(true)}
+              onClick={openCreateDialog}
             >
               <Plus className="hover:rotate-90 duration-500" />
             </button>
@@ -139,7 +153,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                 <br />
                 <button
                   className="text-blue-400 underline cursor-pointer"
-                  onClick={() => setCreateTeamDialogOpen(true)}
+                  onClick={openCreateDialog}
                 >
                   Створіть одну
                 </button>
