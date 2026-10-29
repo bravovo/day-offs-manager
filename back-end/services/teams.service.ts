@@ -42,6 +42,9 @@ export const getSuperAdminTeamsService = async (userId: string) => {
         role: "super",
       },
     },
+  }).populate({
+    path: "members.memberId",
+    select: "firstName lastName email",
   });
 
   return teams;
@@ -49,7 +52,13 @@ export const getSuperAdminTeamsService = async (userId: string) => {
 
 export const getTeamService = async (teamId: string, userId: string) => {
   const team = mongoose.isValidObjectId(teamId)
-    ? await MongoTeam.findById(teamId)
+    ? await MongoTeam.findOne({
+        _id: teamId,
+        "members.memberId": userId,
+      }).populate({
+        path: "members.memberId",
+        select: "firstName lastName email",
+      })
     : null;
 
   if (!team) {
@@ -59,18 +68,7 @@ export const getTeamService = async (teamId: string, userId: string) => {
     throw err;
   }
 
-  const isTeamMember = team.members.some((m) => {
-    return String(m.memberId) === userId;
-  });
-
-  if (isTeamMember) {
-    return team;
-  } else {
-    const err: AppError = new Error("Команду не знайдено") as AppError;
-
-    err.status = 404;
-    throw err;
-  }
+  return team;
 };
 
 export const updateTeamService = async (updatedTeam: Team, userId: string) => {
@@ -96,20 +94,19 @@ export const updateTeamService = async (updatedTeam: Team, userId: string) => {
     throw err;
   }
 
-  const membersById = new Map<string, TeamMember>(
-    team.members.map((member): [string, TeamMember] => [
-      String(member.memberId),
-      {
-        memberId: member.memberId,
-        role: member.role,
-      },
-    ])
-  );
+  const superMembers = team.members.filter((member) => member.role === "super");
+  const membersById = new Map<string, TeamMember>();
 
-  for (const member of updatedTeam.members) {
-    if (!membersById.has(String(member.memberId))) {
-      membersById.set(String(member.memberId), member);
-    }
+  for (const member of [...superMembers, ...updatedTeam.members]) {
+    membersById.set(String(member.memberId), {
+      memberId: member.memberId,
+      role: superMembers.some(
+        (superMember) =>
+          String(superMember.memberId) === String(member.memberId)
+      )
+        ? "super"
+        : member.role,
+    });
   }
 
   updatedTeam.members = [...membersById.values()];

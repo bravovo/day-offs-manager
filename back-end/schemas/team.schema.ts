@@ -25,6 +25,7 @@ const teamSchema = new Schema(
         memberId: {
           type: mongoose.Schema.Types.ObjectId,
           required: true,
+          unique: true,
           ref: "User",
         },
         role: {

@@ -8,13 +8,14 @@ import {
   deleteTeam,
   editTeam,
 } from "@/app/(protected)/dashboard/actions";
-import { EMAIL_REGEX } from "@/constants/constants";
+import {
+  EMAIL_REGEX,
+  MEMBER_EMAIL_EMPTY_ERROR,
+  MEMBER_EMAIL_REGEX_ERROR,
+} from "@/constants/constants";
 import { useRouter } from "next/navigation";
 import { Plus, Settings, Trash } from "lucide-react";
 import Link from "next/link";
-
-const MEMBER_EMAIL_REGEX_ERROR = "Електрона пошта учасника не правильна";
-const MEMBER_EMAIL_EMPTY_ERROR = "Потрібно ввести електронну пошту учасника";
 
 export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
   const router = useRouter();

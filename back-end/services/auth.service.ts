@@ -83,3 +83,17 @@ export const loginUserService = async (data: LoginProps) => {
     refreshToken,
   };
 };
+
+export const getCurrentUserService = async (userId: string) => {
+  const user = await User.findById(userId).select(
+    "firstName lastName email role gender"
+  );
+
+  if (!user) {
+    const error: AppError = new Error("Користувача не знайдено") as AppError;
+    error.status = 404;
+    throw error;
+  }
+
+  return user;
+};

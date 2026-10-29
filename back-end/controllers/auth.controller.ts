@@ -5,6 +5,7 @@ import type { CreateUserDTO } from "../types/dto.ts";
 import type { AppError } from "../types/types.ts";
 import {
   createUserService,
+  getCurrentUserService,
   loginUserService,
 } from "../services/auth.service.ts";
 import { NODE_ENV } from "../configs/env.ts";
@@ -160,6 +161,30 @@ export const postRefresh = (req: Request, res: Response) => {
   }
 
   return res.status(200).json({ success: true, accessToken });
+};
+
+export const getCurrentUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Потрібно авторизуватись",
+      });
+    }
+
+    const user = await getCurrentUserService(req.user.id);
+
+    return res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const postLogoutController = async (
