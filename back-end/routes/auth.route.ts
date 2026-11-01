@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import {
+  getCurrentUser,
   postLogin,
   postLogoutController,
   postRefresh,
@@ -17,6 +18,8 @@ router.post("/login", postLogin);
 router.post("/logout", postLogoutController);
 
 router.post("/refresh", postRefresh);
+
+router.get("/me", requireAuth, getCurrentUser);
 
 router.get("/verify", requireAuth, (_req, res) => {
   return res.status(200).json({ success: true });

@@ -53,6 +53,7 @@ app.use(
     res: express.Response,
     _next: express.NextFunction
   ) => {
+    console.log(err);
     if (err instanceof mongoose.Error.ValidationError) {
       const errorMessage = Object.values(err.errors)[0].message;
 
@@ -73,9 +74,13 @@ app.use(
     const status =
       "status" in err && typeof err.status === "number" ? err.status : 500;
 
+    const message = status === 500 ? "Помилка сервера" : err.message;
+
+    console.log(message);
+
     return res.status(status).json({
       success: false,
-      message: status === 500 ? "Помилка сервера" : err.message,
+      message,
     });
   }
 );

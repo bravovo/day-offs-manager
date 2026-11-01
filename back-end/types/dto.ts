@@ -1,3 +1,5 @@
+import type { DayOffSystem, ExcludeRole } from "./types.ts";
+
 export interface CreateUserDTO {
   email: string;
   firstName: string;
@@ -9,5 +11,21 @@ export interface CreateUserDTO {
 
 export interface CreateTeamDTO {
   title: string;
-  authorId: string;
+  maxDayOffs: number;
+  maxSick: number;
+  system: DayOffSystem;
+  members: string[];
+}
+
+export interface EditTeamMemberDTO {
+  email: string;
+  role: ExcludeRole;
+}
+
+export interface EditTeamDTO {
+  title: string;
+  maxDayOffs: number;
+  maxSick: number;
+  system: DayOffSystem;
+  members: EditTeamMemberDTO[];
 }
