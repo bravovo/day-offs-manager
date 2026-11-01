@@ -18,6 +18,7 @@ export interface ExpandedTeam {
   system: DayOffSystem;
   members: Array<{
     memberId: {
+      _id: string;
       firstName: string;
       lastName: string;
       email: string;
@@ -52,6 +53,7 @@ export interface EditTeam2 {
   system: DayOffSystem;
   members: Array<{
     memberId: {
+      _id: string;
       firstName: string;
       lastName: string;
       email: string;

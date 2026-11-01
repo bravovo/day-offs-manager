@@ -207,7 +207,12 @@ export const updateTeamController = async (
       });
     }
 
-    const normalizedEmails = [...new Set(members.map((email) => email.trim()))];
+    const normalizedMembers = [
+      ...new Map(
+        members.map((member) => [member.email.trim(), member])
+      ).values(),
+    ];
+    const normalizedEmails = normalizedMembers.map((member) => member.email);
     const validEmails = normalizedEmails.filter((email) => {
       return checkEmailValidity(email);
     });
@@ -233,7 +238,9 @@ export const updateTeamController = async (
     }
 
     const teamMembers: TeamMember[] = existingUsers.map((user) => {
-      return { memberId: user._id, role: "worker" };
+      const member = normalizedMembers.find((m) => m.email === user.email);
+
+      return { memberId: user._id, role: member?.role ?? "worker" };
     });
 
     const teamToUpdate: Team = {

@@ -19,7 +19,7 @@ export default async function TeamPage({
   const teamsResponse = await authenticatedFetch(
     `${SERVER_URL}/v1/teams/${id}`,
     {
-      cache: "force-cache",
+      cache: "no-store",
     }
   );
 

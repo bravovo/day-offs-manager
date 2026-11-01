@@ -5,7 +5,7 @@ export interface ValidateTeamProps {
   maxDayOffs: number;
   maxSick: number;
   system: DayOffSystem;
-  members: string[];
+  members: string[] | Array<{ email: string; role: string }>;
 }
 
 export const validateTeam = (team: ValidateTeamProps) => {
@@ -47,7 +47,13 @@ export const validateTeam = (team: ValidateTeamProps) => {
 
   if (
     !Array.isArray(members) ||
-    !members.every((member) => typeof member === "string")
+    !members.every(
+      (member) =>
+        typeof member === "string" ||
+        (typeof member === "object" &&
+          typeof member.email === "string" &&
+          ["admin", "manager", "worker", "super"].includes(member.role))
+    )
   ) {
     const err: AppError = new Error(
       "Список учасників має неправильний формат"

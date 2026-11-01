@@ -81,9 +81,30 @@ export async function editTeam(
   const maxDayOffs = Number(formData.get("maxDayOffs"));
   const maxSick = Number(formData.get("maxSick"));
   const system = formData.get("system");
-  const members = formData
-    .getAll("members")
-    .filter((member): member is string => typeof member === "string");
+  const members = formData.getAll("members").flatMap((member) => {
+    if (typeof member !== "string") {
+      return [];
+    }
+
+    try {
+      const parsed: unknown = JSON.parse(member);
+
+      if (
+        typeof parsed === "object" &&
+        parsed !== null &&
+        "email" in parsed &&
+        "role" in parsed &&
+        typeof parsed.email === "string" &&
+        typeof parsed.role === "string"
+      ) {
+        return [{ email: parsed.email, role: parsed.role }];
+      }
+    } catch {
+      return [];
+    }
+
+    return [];
+  });
 
   if (!id) {
     return {

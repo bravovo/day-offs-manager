@@ -1,21 +1,30 @@
 "use client";
 
-import { editTeam } from "@/app/(protected)/dashboard/actions";
+import { deleteTeam, editTeam } from "@/app/(protected)/dashboard/actions";
 import { CurrentUser, EditTeam2, ExpandedTeamResponse } from "@/types/types";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import {
   EMAIL_REGEX,
   MEMBER_EMAIL_EMPTY_ERROR,
   MEMBER_EMAIL_REGEX_ERROR,
 } from "@/constants/constants";
-import { Settings, Trash } from "lucide-react";
+import { Trash } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Loader } from "@/app/components/Loader/Loader";
 
 export default function Team({
   team,
   user,
 }: Pick<ExpandedTeamResponse, "team"> & { user: CurrentUser }) {
+  const router = useRouter();
   const [updateState, editFormAction, isEditPending] = useActionState(
     editTeam,
+    {}
+  );
+  const [confirmTeamDeleteDialogOpen, setConfirmTeamDeleteDialogOpen] =
+    useState(false);
+  const [deleteState, deleteFormAction, isDeletePending] = useActionState(
+    deleteTeam,
     {}
   );
 
@@ -31,6 +40,31 @@ export default function Team({
   const [showMemberEmailError, setShowMemberEmailError] = useState(false);
   const [pendingMemberEmails, setPendingMemberEmails] = useState<string[]>([]);
 
+  useEffect(() => {
+    if (!deleteState.success) {
+      return;
+    }
+
+    router.replace("/dashboard");
+  }, [router, deleteState]);
+
+  useEffect(() => {
+    if (updateState.success) {
+      router.refresh();
+    }
+  }, [router, updateState]);
+
+  useEffect(() => {
+    document.body.classList.toggle(
+      "overflow-hidden",
+      confirmTeamDeleteDialogOpen
+    );
+
+    return () => {
+      document.body.classList.remove("overflow-hidden");
+    };
+  }, [confirmTeamDeleteDialogOpen]);
+
   const handleFormDataChange = (type: string, value: string | number) => {
     if (type in formData) {
       if (type !== "members") {
@@ -43,10 +77,10 @@ export default function Team({
 
   return (
     <div className="flex flex-1 flex-col items-center bg-zinc-50">
-      {/* {(isPending || isRefreshing) && <Loader />} */}
+      {(isEditPending || isDeletePending) && <Loader />}
       <div className="flex w-full max-w-4xl flex-1 flex-col items-center gap-4 bg-white py-16 sm:items-start">
         <h1 className="text-2xl font-bold">{team.title}</h1>
-        <section className="w-full rounded-md bg-teal-950 p-3 text-white">
+        <section className="w-full rounded-md bg-teal-950 p-1 md:p-3 text-white">
           <form
             action={editFormAction}
             onClick={(event) => event.stopPropagation()}
@@ -132,11 +166,19 @@ export default function Team({
                       key={member.memberId.email}
                       type="hidden"
                       name="members"
-                      value={member.memberId.email}
+                      value={JSON.stringify({
+                        email: member.memberId.email,
+                        role: member.role,
+                      })}
                     />
                   ))}
                   {pendingMemberEmails.map((email) => (
-                    <input key={email} type="hidden" name="members" value={email} />
+                    <input
+                      key={email}
+                      type="hidden"
+                      name="members"
+                      value={JSON.stringify({ email, role: "worker" })}
+                    />
                   ))}
                   <input
                     type="text"
@@ -183,7 +225,7 @@ export default function Team({
                   </button>
                 </div>
               </label>
-              <span className="text-xs">
+              <span className="hidden md:block text-xs">
                 Введіть електронну пошту учасника та натисніть кнопку +
               </span>
               {showMemberEmailError && (
@@ -207,7 +249,7 @@ export default function Team({
                     {formData.members.map((member) => (
                       <li
                         key={member.memberId.email}
-                        className="rounded-md bg-teal-800 transition-colors duration-150 p-3 flex items-center justify-between"
+                        className="rounded-md bg-teal-800 transition-colors duration-150 p-3 flex flex-col md:flex-row md:items-center justify-between"
                       >
                         <div>
                           <p className="font-semibold">
@@ -220,7 +262,35 @@ export default function Team({
                           </p>
                         </div>
                         {member.memberId.email !== user.email ? (
-                          <div className="flex gap-1">
+                          <div className="flex gap-3 items-center justify-between">
+                            <label className="flex flex-col gap-1">
+                              Роль
+                              <select
+                                value={member.role}
+                                disabled={isEditPending}
+                                onChange={(e) => {
+                                  setFormData((previous) => ({
+                                    ...previous,
+                                    members: previous.members.map(
+                                      (currentMember) =>
+                                        currentMember.memberId._id ===
+                                        member.memberId._id
+                                          ? {
+                                              ...currentMember,
+                                              role: e.target.value,
+                                            }
+                                          : currentMember
+                                    ),
+                                  }));
+                                }}
+                                className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
+                              >
+                                <option value="admin">
+                                  Адміністратор команди
+                                </option>
+                                <option value="worker">Працівник</option>
+                              </select>
+                            </label>
                             <button
                               type="button"
                               className="bg-red-900 hover:bg-red-800 text-white font-bold px-2 py-2 
@@ -237,24 +307,6 @@ export default function Team({
                               }}
                             >
                               <Trash />
-                            </button>
-                            <button
-                              className="bg-teal-900 hover:bg-teal-700 text-white font-bold px-2 py-2 
-                      rounded-md transition-all cursor-pointer duration-200"
-                              onClick={() => {
-                                // setTeamToEdit(team);
-                                // setDialogData({
-                                //   id: team._id,
-                                //   title: team.title,
-                                //   maxDayOffs: team.maxOff,
-                                //   maxSick: team.maxSick,
-                                //   system: team.system,
-                                //   members: [],
-                                // });
-                                // setEditTeamDialogOpen(true);
-                              }}
-                            >
-                              <Settings className="hover:rotate-180 duration-500" />
                             </button>
                           </div>
                         ) : null}
@@ -284,14 +336,27 @@ export default function Team({
                   </ul>
                 )}
               </div>
-              <button
-                type="submit"
-                className="mt-2 h-10 border-none bg-white hover:bg-gray-300 text-black rounded-xl 
-                  px-3 py-1 transition-all cursor-pointer duration-500 font-bold"
-                disabled={isEditPending}
-              >
-                {isEditPending ? "Збереження змін..." : "Зберегти зміни"}
-              </button>
+              <div className="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  className="mt-2 h-10 border-none bg-red-900 hover:bg-red-800 text-white md:font-bold rounded-xl 
+                    px-1 md:px-3 py-1 transition-all cursor-pointer duration-500"
+                  onClick={() => setConfirmTeamDeleteDialogOpen(true)}
+                  disabled={isDeletePending}
+                >
+                  {isDeletePending
+                    ? "Видалення команди..."
+                    : "Видалити команду"}
+                </button>
+                <button
+                  type="submit"
+                  className="mt-2 h-10 border-none bg-white hover:bg-gray-300 text-black rounded-xl 
+                  px-1 md:px-3 py-1 transition-all cursor-pointer duration-500 md:font-bold"
+                  disabled={isEditPending}
+                >
+                  {isEditPending ? "Збереження змін..." : "Зберегти зміни"}
+                </button>
+              </div>
               {updateState.error && (
                 <p className="font-bold text-red-600">{updateState.error}</p>
               )}
@@ -299,6 +364,51 @@ export default function Team({
           </form>
         </section>
       </div>
+
+      {confirmTeamDeleteDialogOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-gray-500/80 p-1.5 md:p-4"
+          onClick={() => setConfirmTeamDeleteDialogOpen(false)}
+        >
+          <form
+            action={deleteFormAction}
+            className="w-full md:w-100 min-w-0 flex flex-col gap-2 border-none rounded-2xl bg-white"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <input type="hidden" name="id" value={team._id || ""} />
+            <div
+              className="w-full min-w-0 px-4 md:px-7 py-4 flex flex-col gap-5
+            "
+            >
+              <strong>Ви впевнені, що хочете видалити команду?</strong>
+
+              {deleteState.error && (
+                <p className="font-bold text-red-600">{deleteState.error}</p>
+              )}
+
+              <div className="flex gap-1 justify-between">
+                <button
+                  type="button"
+                  className="mt-2 h-10 border-none bg-teal-950 hover:bg-teal-800 text-white rounded-xl 
+                    px-1 md:px-3 py-1 transition-all cursor-pointer duration-500"
+                  disabled={isDeletePending}
+                  onClick={() => setConfirmTeamDeleteDialogOpen(false)}
+                >
+                  Скасувати
+                </button>
+                <button
+                  type="submit"
+                  className="mt-2 h-10 border-none bg-red-900 hover:bg-red-800 text-white rounded-xl 
+                    px-1 md:px-3 py-1 transition-all cursor-pointer duration-500"
+                  disabled={isDeletePending}
+                >
+                  {isDeletePending ? "Видалення..." : "Видалити"}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

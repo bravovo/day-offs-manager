@@ -9,7 +9,7 @@ export default function Sidebar() {
   return (
     <aside
       className="fixed bottom-0 left-0 z-10 flex w-full shrink-0 flex-col bg-teal-950
-       text-white md:static md:min-h-screen md:w-64"
+       text-white md:inset-y-0 md:h-screen md:w-64"
     >
       <nav className="flex-1 py-4">
         <ul className="flex justify-around gap-1 md:flex-col">

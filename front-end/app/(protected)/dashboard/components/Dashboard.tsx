@@ -14,7 +14,7 @@ import {
   MEMBER_EMAIL_REGEX_ERROR,
 } from "@/constants/constants";
 import { useRouter } from "next/navigation";
-import { Plus, Settings, Trash } from "lucide-react";
+import { Plus, Settings, Trash, X } from "lucide-react";
 import Link from "next/link";
 
 export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
@@ -100,6 +100,23 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
   useEffect(() => {
     setIsRefreshing(false);
   }, [teams]);
+
+  useEffect(() => {
+    const isDialogOpen =
+      createTeamDialogOpen ||
+      editTeamDialogOpen ||
+      confirmTeamDeleteDialogOpen;
+
+    document.body.classList.toggle("overflow-hidden", isDialogOpen);
+
+    return () => {
+      document.body.classList.remove("overflow-hidden");
+    };
+  }, [
+    createTeamDialogOpen,
+    editTeamDialogOpen,
+    confirmTeamDeleteDialogOpen,
+  ]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const openCreateDialog = () => {
@@ -120,7 +137,12 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
     if (type in dialogData) {
       if (type === "members" && typeof value === "string") {
         setDialogData((prev) => {
-          return { ...prev, members: [...prev.members, value] };
+          return {
+            ...prev,
+            members: prev.members.some((member) => member === value)
+              ? prev.members
+              : [...prev.members, value],
+          };
         });
       } else {
         setDialogData((prev) => {
@@ -353,15 +375,39 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                 </p>
               )}
               {dialogData.members.length > 0 && (
-                <label
+                <div
                   className="flex flex-col gap-1 border border-teal-950 px-2 py-2 
                   font-semibold rounded-md"
                 >
                   Учасники
-                  <span className="font-normal">
-                    {dialogData.members.join(", ")}
-                  </span>
-                </label>
+                  <ul className="flex flex-wrap gap-1 font-normal">
+                    {dialogData.members.map((member) => (
+                      <li
+                        key={member}
+                        className="flex w-fit items-center rounded-2xl bg-teal-950 p-0.5 text-white"
+                      >
+                        <span>{member}</span>
+                        <button
+                          type="button"
+                          className="text-white hover:text-red-400 cursor-pointer"
+                        >
+                          <X
+                            size={20}
+                            onClick={() => {
+                              setDialogData((previous) => ({
+                                ...previous,
+                                members: previous.members.filter(
+                                  (currentMember) => currentMember !== member
+                                ),
+                              }));
+                            }}
+                            className="transition-colors duration-200"
+                          />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
 
               <button
@@ -519,15 +565,39 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                 </p>
               )}
               {dialogData.members.length > 0 && (
-                <label
+                <div
                   className="flex flex-col gap-1 border border-teal-950 px-2 py-2 
                   font-semibold rounded-md"
                 >
                   Учасники
-                  <span className="font-normal">
-                    {dialogData.members.join(", ")}
-                  </span>
-                </label>
+                  <ul className="flex flex-wrap gap-1 font-normal">
+                    {dialogData.members.map((member) => (
+                      <li
+                        key={member}
+                        className="flex w-fit items-center rounded-2xl bg-teal-950 p-0.5 text-white"
+                      >
+                        <span>{member}</span>
+                        <button
+                          type="button"
+                          className="text-white hover:text-red-400 cursor-pointer"
+                        >
+                          <X
+                            size={20}
+                            onClick={() => {
+                              setDialogData((previous) => ({
+                                ...previous,
+                                members: previous.members.filter(
+                                  (currentMember) => currentMember !== member
+                                ),
+                              }));
+                            }}
+                            className="transition-colors duration-200"
+                          />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
 
               <button

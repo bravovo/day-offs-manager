@@ -5,6 +5,7 @@ export interface AppError extends Error {
 }
 
 export type Role = "super" | "admin" | "manager" | "worker" | "user";
+export type ExcludeRole = Exclude<Role, "user">;
 
 export interface User {
   email: string;
@@ -19,7 +20,7 @@ export type UserNoRole = Omit<User, "role">;
 
 export interface TeamMember {
   memberId: mongoose.Types.ObjectId;
-  role: Exclude<Role, "user">;
+  role: ExcludeRole;
 }
 
 export type DayOffSystem = "all-in" | "accum";
