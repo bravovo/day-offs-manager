@@ -100,7 +100,7 @@ export async function editTeam(
         return [{ email: parsed.email, role: parsed.role }];
       }
     } catch {
-      return [];
+      return [{ email: member.trim(), role: "worker" }];
     }
 
     return [];

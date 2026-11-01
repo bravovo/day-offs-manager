@@ -51,6 +51,7 @@ export const validateTeam = (team: ValidateTeamProps) => {
       (member) =>
         typeof member === "string" ||
         (typeof member === "object" &&
+          member !== null &&
           typeof member.email === "string" &&
           ["admin", "manager", "worker", "super"].includes(member.role))
     )

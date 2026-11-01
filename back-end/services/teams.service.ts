@@ -18,7 +18,9 @@ const getConflictingMemberEmails = async (
     conflictingTeams.flatMap((conflictingTeam) =>
       conflictingTeam.members
         .filter((member) =>
-          memberIds.some((memberId) => String(memberId) === String(member.memberId))
+          memberIds.some(
+            (memberId) => String(memberId) === String(member.memberId)
+          )
         )
         .map((member) => String(member.memberId))
     )
@@ -160,6 +162,19 @@ export const updateTeamService = async (updatedTeam: Team, userId: string) => {
   const membersById = new Map<string, TeamMember>();
 
   for (const member of [...superMembers, ...updatedTeam.members]) {
+    const isExistingSuper = superMembers.some(
+      (superMember) => String(superMember.memberId) === String(member.memberId)
+    );
+
+    if (member.role === "super" && !isExistingSuper) {
+      const error: AppError = new Error(
+        "Роль 'super' не можна призначити під час оновлення команди"
+      ) as AppError;
+      error.status = 400;
+
+      throw error;
+    }
+
     membersById.set(String(member.memberId), {
       memberId: member.memberId,
       role: superMembers.some(

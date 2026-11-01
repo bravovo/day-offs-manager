@@ -60,6 +60,19 @@ export default function Team({
   }, [router, updateState]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFormData({
+      id: team._id,
+      title: team.title,
+      maxDayOffs: team.maxOff,
+      maxSick: team.maxSick,
+      system: team.system,
+      members: team.members,
+    });
+    setPendingMembers([]);
+  }, [team]);
+
+  useEffect(() => {
     document.body.classList.toggle(
       "overflow-hidden",
       confirmTeamDeleteDialogOpen
