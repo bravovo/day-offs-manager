@@ -3,6 +3,7 @@ import { authenticatedFetch } from "@/lib/auth";
 import { CurrentUserResponse, ExpandedTeamResponse } from "@/types/types";
 import { Metadata } from "next";
 import Team from "./components/Team";
+import { notFound } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Сторінка команди",
@@ -28,6 +29,9 @@ export default async function TeamPage({
   });
 
   if (!teamsResponse.ok) {
+    if (teamsResponse.status === 404) {
+      notFound();
+    }
     throw new Error("Не вдалося завантажити команду");
   }
 
