@@ -12,6 +12,11 @@ import { Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Loader } from "@/app/components/Loader/Loader";
 
+type PendingMember = {
+  email: string;
+  role: "admin" | "worker";
+};
+
 export default function Team({
   team,
   user,
@@ -38,7 +43,7 @@ export default function Team({
   });
   const [memberEmail, setMemberEmail] = useState("");
   const [showMemberEmailError, setShowMemberEmailError] = useState(false);
-  const [pendingMemberEmails, setPendingMemberEmails] = useState<string[]>([]);
+  const [pendingMembers, setPendingMembers] = useState<PendingMember[]>([]);
 
   useEffect(() => {
     if (!deleteState.success) {
@@ -172,12 +177,12 @@ export default function Team({
                       })}
                     />
                   ))}
-                  {pendingMemberEmails.map((email) => (
+                  {pendingMembers.map((member) => (
                     <input
-                      key={email}
+                      key={member.email}
                       type="hidden"
                       name="members"
-                      value={JSON.stringify({ email, role: "worker" })}
+                      value={JSON.stringify(member)}
                     />
                   ))}
                   <input
@@ -203,16 +208,18 @@ export default function Team({
                       const isAlreadyMember = formData.members.some(
                         (member) => member.memberId.email === email
                       );
-                      const isPending = pendingMemberEmails.includes(email);
+                      const isPending = pendingMembers.some(
+                        (member) => member.email === email
+                      );
 
                       if (
                         EMAIL_REGEX.test(email) &&
                         !isAlreadyMember &&
                         !isPending
                       ) {
-                        setPendingMemberEmails((previous) => [
+                        setPendingMembers((previous) => [
                           ...previous,
-                          email,
+                          { email, role: "worker" },
                         ]);
                         setShowMemberEmailError(false);
                         setMemberEmail("");
@@ -238,7 +245,7 @@ export default function Team({
               <div>
                 <h2 className="text-xl font-bold">Учасники</h2>
                 {formData.members.length === 0 &&
-                pendingMemberEmails.length === 0 ? (
+                pendingMembers.length === 0 ? (
                   <div className="w-full flex justify-center items-center h-48">
                     <span className="text-center text-xl font-semibold">
                       У цієї команди поки що немає учасників
@@ -283,7 +290,7 @@ export default function Team({
                                     ),
                                   }));
                                 }}
-                                className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
+                                className="w-full border border-zinc-400 rounded-md bg-teal-950 p-2 text-white outline-none"
                               >
                                 <option value="admin">
                                   Адміністратор команди
@@ -312,25 +319,54 @@ export default function Team({
                         ) : null}
                       </li>
                     ))}
-                    {pendingMemberEmails.map((email) => (
+                    {pendingMembers.map((member) => (
                       <li
-                        key={email}
-                        className="rounded-md bg-teal-800 transition-colors duration-150 p-3 flex items-center justify-between"
+                        key={member.email}
+                        className="rounded-md bg-teal-800 transition-colors duration-150 p-3 flex flex-col md:flex-row md:items-center justify-between"
                       >
-                        <p>{email}</p>
-                        <button
-                          type="button"
-                          className="bg-red-900 hover:bg-red-800 text-white font-bold px-2 py-2 rounded-md"
-                          onClick={() =>
-                            setPendingMemberEmails((previous) =>
-                              previous.filter(
-                                (currentEmail) => currentEmail !== email
+                        <p>{member.email}</p>
+                        <div className="flex gap-3 items-center justify-between">
+                          <label className="flex flex-col gap-1">
+                            Роль
+                            <select
+                              value={member.role}
+                              disabled={isEditPending}
+                              onChange={(e) => {
+                                setPendingMembers((previous) =>
+                                  previous.map((pendingMember) =>
+                                    pendingMember.email === member.email
+                                      ? {
+                                          ...pendingMember,
+                                          role: e.target
+                                            .value as PendingMember["role"],
+                                        }
+                                      : pendingMember
+                                  )
+                                );
+                              }}
+                              className="w-full border border-zinc-400 rounded-md bg-teal-950 p-2 text-white outline-none"
+                            >
+                              <option value="admin">
+                                Адміністратор команди
+                              </option>
+                              <option value="worker">Працівник</option>
+                            </select>
+                          </label>
+                          <button
+                            type="button"
+                            className="bg-red-900 hover:bg-red-800 text-white font-bold px-2 py-2 rounded-md"
+                            onClick={() =>
+                              setPendingMembers((previous) =>
+                                previous.filter(
+                                  (pendingMember) =>
+                                    pendingMember.email !== member.email
+                                )
                               )
-                            )
-                          }
-                        >
-                          <Trash />
-                        </button>
+                            }
+                          >
+                            <Trash />
+                          </button>
+                        </div>
                       </li>
                     ))}
                   </ul>

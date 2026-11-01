@@ -1,8 +1,53 @@
 import mongoose from "mongoose";
 import MongoTeam from "../schemas/team.schema.ts";
+import User from "../schemas/user.schema.ts";
 import type { AppError, Team, TeamMember } from "../types/types.ts";
 
+const getConflictingMemberEmails = async (
+  memberIds: mongoose.Types.ObjectId[],
+  excludedTeamId?: mongoose.Types.ObjectId
+) => {
+  const conflictingTeams = await MongoTeam.find({
+    ...(excludedTeamId ? { _id: { $ne: excludedTeamId } } : {}),
+    "members.memberId": { $in: memberIds },
+  })
+    .select("members.memberId")
+    .lean();
+
+  const conflictingMemberIds = new Set(
+    conflictingTeams.flatMap((conflictingTeam) =>
+      conflictingTeam.members
+        .filter((member) =>
+          memberIds.some((memberId) => String(memberId) === String(member.memberId))
+        )
+        .map((member) => String(member.memberId))
+    )
+  );
+
+  const conflictingUsers = await User.find({
+    _id: { $in: [...conflictingMemberIds] },
+  })
+    .select("email")
+    .lean();
+
+  return conflictingUsers.map((user) => user.email);
+};
+
 export const createTeamService = async (team: Team) => {
+  const memberIds = team.members
+    .filter((member) => member.role !== "super")
+    .map((member) => member.memberId);
+  const conflictingMemberEmails = await getConflictingMemberEmails(memberIds);
+
+  if (conflictingMemberEmails.length > 0) {
+    const error: AppError = new Error(
+      `Користувачі вже входять до іншої команди: ${conflictingMemberEmails.join(", ")}`
+    ) as AppError;
+    error.status = 409;
+
+    throw error;
+  }
+
   const session = await mongoose.startSession();
   let createdTeam = null;
   try {
@@ -92,6 +137,23 @@ export const updateTeamService = async (updatedTeam: Team, userId: string) => {
 
     err.status = 404;
     throw err;
+  }
+
+  const memberIds = updatedTeam.members
+    .filter((member) => member.role !== "super")
+    .map((member) => member.memberId);
+  const conflictingMemberEmails = await getConflictingMemberEmails(
+    memberIds,
+    team._id
+  );
+
+  if (conflictingMemberEmails.length > 0) {
+    const error: AppError = new Error(
+      `Користувачі вже входять до іншої команди: ${conflictingMemberEmails.join(", ")}`
+    ) as AppError;
+    error.status = 409;
+
+    throw error;
   }
 
   const superMembers = team.members.filter((member) => member.role === "super");
