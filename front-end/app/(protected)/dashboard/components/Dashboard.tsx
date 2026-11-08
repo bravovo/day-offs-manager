@@ -34,6 +34,9 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
     deleteTeam,
     {}
   );
+  const [showCreateErrors, setShowCreateErrors] = useState(false);
+  const [showUpdateErrors, setShowUpdateErrors] = useState(false);
+  const [showDeleteErrors, setShowDeleteErrors] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dialogData, setDialogData] = useState<CreateTeam>({
     id: undefined,
@@ -54,6 +57,24 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
+    if (state.error) {
+      setShowCreateErrors(true);
+    }
+  }, [state.error]);
+
+  useEffect(() => {
+    if (updateState.error) {
+      setShowUpdateErrors(true);
+    }
+  }, [updateState.error]);
+
+  useEffect(() => {
+    if (deleteState.error) {
+      setShowDeleteErrors(true);
+    }
+  }, [deleteState.error]);
+
+  useEffect(() => {
     if (!state.success) {
       return;
     }
@@ -69,6 +90,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
     });
     setMemberEmail("");
     setShowMemberEmailError(false);
+    setShowCreateErrors(false);
     setCreateTeamDialogOpen(false);
     router.refresh();
   }, [router, state]);
@@ -89,6 +111,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
     });
     setMemberEmail("");
     setShowMemberEmailError(false);
+    setShowUpdateErrors(false);
     setEditTeamDialogOpen(false);
     router.refresh();
   }, [router, updateState]);
@@ -99,6 +122,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
     }
 
     setIsRefreshing(true);
+    setShowDeleteErrors(false);
     setConfirmTeamDeleteDialogOpen(false);
     router.refresh();
   }, [router, deleteState]);
@@ -130,6 +154,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
     });
     setMemberEmail("");
     setShowMemberEmailError(false);
+    setShowCreateErrors(false);
     setCreateTeamDialogOpen(true);
   };
 
@@ -205,6 +230,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                       className="bg-red-900 hover:bg-red-800 text-white font-bold px-2 py-2 
                       rounded-md transition-all cursor-pointer duration-200"
                       onClick={() => {
+                        setShowDeleteErrors(false);
                         setConfirmTeamDeleteDialogOpen(true);
                         setTeamToDelete(team._id);
                       }}
@@ -224,6 +250,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                           system: team.system,
                           members: [],
                         });
+                        setShowUpdateErrors(false);
                         setEditTeamDialogOpen(true);
                       }}
                     >
@@ -240,7 +267,10 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
       {createTeamDialogOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-gray-500/80 p-1.5 md:p-4"
-          onClick={() => setCreateTeamDialogOpen(false)}
+          onClick={() => {
+            setShowCreateErrors(false);
+            setCreateTeamDialogOpen(false);
+          }}
         >
           <form
             action={formAction}
@@ -263,7 +293,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                   }}
                   className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
                 />
-                {fieldErrors.title && (
+                {showCreateErrors && fieldErrors.title && (
                   <p className="text-xs text-red-600">{fieldErrors.title}</p>
                 )}
               </label>
@@ -288,7 +318,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                     }}
                     className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
                   />
-                  {fieldErrors.maxDayOffs && (
+                  {showCreateErrors && fieldErrors.maxDayOffs && (
                     <p className="text-xs text-red-600">
                       {fieldErrors.maxDayOffs}
                     </p>
@@ -309,7 +339,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                     }}
                     className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
                   />
-                  {fieldErrors.maxSick && (
+                  {showCreateErrors && fieldErrors.maxSick && (
                     <p className="text-xs text-red-600">
                       {fieldErrors.maxSick}
                     </p>
@@ -333,7 +363,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                     Накопичувальний (вихідні додаються кожного місяця)
                   </option>
                 </select>
-                {fieldErrors.system && (
+                {showCreateErrors && fieldErrors.system && (
                   <p className="text-xs text-red-600">{fieldErrors.system}</p>
                 )}
               </label>
@@ -349,8 +379,10 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                     />
                   ))}
                   <input
-                    type="text"
+                    id="create-member-email"
+                    type="email"
                     name="member"
+                    aria-describedby="create-member-email-error"
                     value={memberEmail}
                     placeholder="Введіть електронну пошту учасника"
                     onChange={(e) => {
@@ -384,7 +416,11 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                 Введіть електронну пошту учасника та натисніть кнопку +
               </span>
               {showMemberEmailError && (
-                <p className="font-bold text-red-600">
+                <p
+                  id="create-member-email-error"
+                  role="alert"
+                  className="font-bold text-red-600"
+                >
                   {memberEmail.trim().length === 0
                     ? MEMBER_EMAIL_EMPTY_ERROR
                     : MEMBER_EMAIL_REGEX_ERROR}
@@ -434,9 +470,11 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
               >
                 {isPending ? "Створення команди..." : "Створити команду"}
               </button>
-              {state.error && typeof state.error === "string" && (
-                <p className="font-bold text-red-600">{state.error}</p>
-              )}
+              {showCreateErrors &&
+                state.error &&
+                typeof state.error === "string" && (
+                  <p className="font-bold text-red-600">{state.error}</p>
+                )}
             </div>
           </form>
         </div>
@@ -445,7 +483,10 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
       {teamToEdit && editTeamDialogOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-gray-500/80 p-1.5 md:p-4"
-          onClick={() => setEditTeamDialogOpen(false)}
+          onClick={() => {
+            setShowUpdateErrors(false);
+            setEditTeamDialogOpen(false);
+          }}
         >
           <form
             action={editFormAction}
@@ -469,7 +510,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                   }}
                   className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
                 />
-                {updateFieldErrors.title && (
+                {showUpdateErrors && updateFieldErrors.title && (
                   <p className="text-xs text-red-600">
                     {updateFieldErrors.title}
                   </p>
@@ -496,7 +537,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                     }}
                     className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
                   />
-                  {updateFieldErrors.maxDayOffs && (
+                  {showUpdateErrors && updateFieldErrors.maxDayOffs && (
                     <p className="text-xs text-red-600">
                       {updateFieldErrors.maxDayOffs}
                     </p>
@@ -518,7 +559,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                     className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
                   />
                 </label>
-                {updateFieldErrors.maxSick && (
+                {showUpdateErrors && updateFieldErrors.maxSick && (
                   <p className="text-xs text-red-600">
                     {updateFieldErrors.maxSick}
                   </p>
@@ -541,7 +582,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                     Накопичувальний (вихідні додаються кожного місяця)
                   </option>
                 </select>
-                {updateFieldErrors.system && (
+                {showUpdateErrors && updateFieldErrors.system && (
                   <p className="text-xs text-red-600">
                     {updateFieldErrors.system}
                   </p>
@@ -559,8 +600,10 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                     />
                   ))}
                   <input
-                    type="text"
+                    id="edit-member-email"
+                    type="email"
                     name="member"
+                    aria-describedby="edit-member-email-error"
                     value={memberEmail}
                     placeholder="Введіть електронну пошту учасника"
                     onChange={(e) => {
@@ -594,7 +637,11 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                 Введіть електронну пошту учасника та натисніть кнопку +
               </span>
               {showMemberEmailError && (
-                <p className="font-bold text-red-600">
+                <p
+                  id="edit-member-email-error"
+                  role="alert"
+                  className="font-bold text-red-600"
+                >
                   {memberEmail.trim().length === 0
                     ? MEMBER_EMAIL_EMPTY_ERROR
                     : MEMBER_EMAIL_REGEX_ERROR}
@@ -644,9 +691,11 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
               >
                 {isEditPending ? "Збереження змін..." : "Зберегти зміни"}
               </button>
-              {updateState.error && typeof updateState.error === "string" && (
-                <p className="font-bold text-red-600">{updateState.error}</p>
-              )}
+              {showUpdateErrors &&
+                updateState.error &&
+                typeof updateState.error === "string" && (
+                  <p className="font-bold text-red-600">{updateState.error}</p>
+                )}
             </div>
           </form>
         </div>
@@ -655,7 +704,10 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
       {teamToDelete && confirmTeamDeleteDialogOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-gray-500/80 p-1.5 md:p-4"
-          onClick={() => setConfirmTeamDeleteDialogOpen(false)}
+          onClick={() => {
+            setShowDeleteErrors(false);
+            setConfirmTeamDeleteDialogOpen(false);
+          }}
         >
           <form
             action={deleteFormAction}
@@ -669,9 +721,11 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
             >
               <strong>Ви впевнені, що хочете видалити команду?</strong>
 
-              {deleteState.error && typeof deleteState.error === "string" && (
-                <p className="font-bold text-red-600">{deleteState.error}</p>
-              )}
+              {showDeleteErrors &&
+                deleteState.error &&
+                typeof deleteState.error === "string" && (
+                  <p className="font-bold text-red-600">{deleteState.error}</p>
+                )}
 
               <div className="flex gap-1 justify-between">
                 <button
@@ -679,7 +733,10 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                   className="mt-2 h-10 border-none bg-teal-950 hover:bg-teal-800 text-white rounded-xl 
                     px-3 py-1 transition-all cursor-pointer duration-500"
                   disabled={isDeletePending}
-                  onClick={() => setConfirmTeamDeleteDialogOpen(false)}
+                  onClick={() => {
+                    setShowDeleteErrors(false);
+                    setConfirmTeamDeleteDialogOpen(false);
+                  }}
                 >
                   Скасувати
                 </button>
