@@ -32,6 +32,9 @@ export default function Team({
     deleteTeam,
     {}
   );
+  const updateFieldErrors = Array.isArray(updateState.error)
+    ? Object.assign({}, ...updateState.error)
+    : {};
 
   const [formData, setFormData] = useState<EditTeam2>({
     id: team._id,
@@ -120,6 +123,11 @@ export default function Team({
                   }}
                   className="w-full border border-zinc-400 rounded-md outline-none p-2"
                 />
+                {updateFieldErrors.title && (
+                  <p className="text-xs text-red-600">
+                    {updateFieldErrors.title}
+                  </p>
+                )}
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <label className="min-w-0 flex flex-col gap-1">
@@ -140,6 +148,11 @@ export default function Team({
                     }}
                     className="w-full border border-zinc-400 rounded-md outline-none p-2"
                   />
+                  {updateFieldErrors.maxDayOffs && (
+                    <p className="text-xs text-red-600">
+                      {updateFieldErrors.maxDayOffs}
+                    </p>
+                  )}
                 </label>
                 <label className="min-w-0 flex flex-col gap-1">
                   Кількість лікарняних
@@ -156,6 +169,11 @@ export default function Team({
                     }}
                     className="w-full border border-zinc-400 rounded-md outline-none p-2"
                   />
+                  {updateFieldErrors.maxSick && (
+                    <p className="text-xs text-red-600">
+                      {updateFieldErrors.maxSick}
+                    </p>
+                  )}
                 </label>
               </div>
               <label className="flex flex-col gap-1">
@@ -175,6 +193,11 @@ export default function Team({
                     Накопичувальний (вихідні додаються кожного місяця)
                   </option>
                 </select>
+                {updateFieldErrors.system && (
+                  <p className="text-xs text-red-600">
+                    {updateFieldErrors.system}
+                  </p>
+                )}
               </label>
               <label className="flex flex-col gap-1">
                 Додати учасника (необов&apos;язково)
@@ -406,7 +429,7 @@ export default function Team({
                   {isEditPending ? "Збереження змін..." : "Зберегти зміни"}
                 </button>
               </div>
-              {updateState.error && (
+              {typeof updateState.error === "string" && (
                 <p className="font-bold text-red-600">{updateState.error}</p>
               )}
             </div>
@@ -431,7 +454,7 @@ export default function Team({
             >
               <strong>Ви впевнені, що хочете видалити команду?</strong>
 
-              {deleteState.error && (
+              {typeof deleteState.error === "string" && (
                 <p className="font-bold text-red-600">{deleteState.error}</p>
               )}
 

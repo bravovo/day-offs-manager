@@ -1,4 +1,5 @@
-import type { AppError, DayOffSystem } from "../types/types.ts";
+import type { DayOffSystem } from "../types/types.ts";
+import { ValidateTeam } from "../validation/schemas/teams.schema.ts";
 
 export interface ValidateTeamProps {
   title: string;
@@ -11,38 +12,21 @@ export interface ValidateTeamProps {
 export const validateTeam = (team: ValidateTeamProps) => {
   const { title, maxDayOffs, maxSick, system, members } = team;
 
-  if (!title || title.trim().length === 0) {
-    const err: AppError = new Error("Назва команди обов'язкова") as AppError;
+  const validated = ValidateTeam.safeParse({
+    title,
+    maxDayOffs,
+    maxSick,
+    system,
+  });
+  let errors: Record<string, string>[] = [];
 
-    err.status = 400;
-    throw err;
-  }
+  if (!validated.success) {
+    errors = validated.error.issues.map((err) => {
+      const path = err.path[0];
+      const message = err.message;
 
-  if (!Number.isInteger(maxDayOffs) || maxDayOffs < 0) {
-    const err: AppError = new Error(
-      "Максимальна кількість вихідних повинна бути цілим числом від 0"
-    ) as AppError;
-
-    err.status = 400;
-    throw err;
-  }
-
-  if (!Number.isInteger(maxSick) || maxSick < 0) {
-    const err: AppError = new Error(
-      "Максимальна кількість лікарняних повинна бути цілим числом від 0"
-    ) as AppError;
-
-    err.status = 400;
-    throw err;
-  }
-
-  if (system !== "all-in" && system !== "accum") {
-    const err: AppError = new Error(
-      "Неправильний тип накопичення вихідних"
-    ) as AppError;
-
-    err.status = 400;
-    throw err;
+      return { [path]: message };
+    });
   }
 
   if (
@@ -56,13 +40,8 @@ export const validateTeam = (team: ValidateTeamProps) => {
           ["admin", "manager", "worker", "super"].includes(member.role))
     )
   ) {
-    const err: AppError = new Error(
-      "Список учасників має неправильний формат"
-    ) as AppError;
-
-    err.status = 400;
-    throw err;
+    errors.push({ members: "Список учасників має неправильний формат" });
   }
 
-  return true;
+  return errors;
 };

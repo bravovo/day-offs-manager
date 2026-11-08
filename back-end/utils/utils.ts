@@ -1,5 +1,7 @@
-export const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+import * as z from "zod";
+
+// export const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 export const checkEmailValidity = (email: string): boolean => {
-  return EMAIL_REGEX.test(email.trim());
+  return z.email().validate(email);
 };

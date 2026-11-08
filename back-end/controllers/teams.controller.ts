@@ -28,10 +28,13 @@ export const postTeamController = async (
     const { title, maxDayOffs, maxSick, system, members }: CreateTeamDTO =
       req.body;
 
-    if (!validateTeam(req.body)) {
+    const validationErrors = validateTeam(req.body);
+
+    if (validationErrors.length > 0) {
       return res.status(400).json({
         success: false,
         message: "Введені дані в неправильному форматі",
+        errors: validationErrors,
       });
     }
 
@@ -200,10 +203,13 @@ export const updateTeamController = async (
     const { title, maxDayOffs, maxSick, system, members }: EditTeamDTO =
       req.body;
 
-    if (!validateTeam(req.body)) {
+    const validationErrors = validateTeam(req.body);
+
+    if (validationErrors.length > 0) {
       return res.status(400).json({
         success: false,
         message: "Введені дані в неправильному форматі",
+        errors: validationErrors,
       });
     }
 

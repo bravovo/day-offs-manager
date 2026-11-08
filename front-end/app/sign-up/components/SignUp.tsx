@@ -9,6 +9,9 @@ export default function SignUp() {
     error: undefined,
     success: undefined,
   });
+  const fieldErrors = Array.isArray(state.error)
+    ? Object.assign({}, ...state.error)
+    : {};
 
   const [formData, setFormData] = useState({
     email: "",
@@ -54,6 +57,9 @@ export default function SignUp() {
                 }}
                 className="border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
               />
+              {fieldErrors.email && (
+                <p className="text-xs text-red-600">{fieldErrors.email}</p>
+              )}
             </label>
             <label htmlFor="firstName" className="flex flex-col gap-1">
               Ім&apos;я
@@ -68,6 +74,9 @@ export default function SignUp() {
                 }}
                 className="border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
               />
+              {fieldErrors.firstName && (
+                <p className="text-xs text-red-600">{fieldErrors.firstName}</p>
+              )}
             </label>
             <label htmlFor="lastName" className="flex flex-col gap-1">
               Прізвище
@@ -82,6 +91,9 @@ export default function SignUp() {
                 }}
                 className="border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
               />
+              {fieldErrors.lastName && (
+                <p className="text-xs text-red-600">{fieldErrors.lastName}</p>
+              )}
             </label>
             <label htmlFor="password" className="flex flex-col gap-1">
               Пароль
@@ -96,6 +108,9 @@ export default function SignUp() {
                 }}
                 className="border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
               />
+              {fieldErrors.password && (
+                <p className="text-xs text-red-600">{fieldErrors.password}</p>
+              )}
             </label>
             <label htmlFor="passwordConfirm" className="flex flex-col gap-1">
               Підтвердження паролю
@@ -110,6 +125,11 @@ export default function SignUp() {
                 }}
                 className="border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
               />
+              {fieldErrors.confirmPassword && (
+                <p className="text-xs text-red-600">
+                  {fieldErrors.confirmPassword}
+                </p>
+              )}
             </label>
 
             <button
@@ -119,8 +139,11 @@ export default function SignUp() {
             >
               Створити акаунт
             </button>
-            {state.error && (
+            {state.error && typeof state.error === "string" && (
               <p className="font-bold text-red-600">{state.error}</p>
+            )}
+            {state.error && typeof state.error !== "string" && (
+              <p className="font-bold text-red-600">Виправте помилки</p>
             )}
           </div>
         </form>
