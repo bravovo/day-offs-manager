@@ -5,7 +5,7 @@ import { SERVER_URL } from "@/configs/env";
 import { redirect } from "next/navigation";
 
 export interface FormAction {
-  error?: string;
+  error?: string | Record<string, string>[];
   success?: string;
 }
 
@@ -19,24 +19,30 @@ export async function signUp(
   const password = formData.get("password");
   const confirmPassword = formData.get("passwordConfirm");
 
+  const errors = [];
+
   if (!email) {
-    return { error: "Електронна пошта не може бути порожня" };
+    errors.push({ email: "Електронна пошта не може бути порожня" });
   }
 
   if (!firstName) {
-    return { error: "Ім'я не може бути порожнім" };
+    errors.push({ firstName: "Ім'я не може бути порожнім" });
   }
 
   if (!lastName) {
-    return { error: "Прізвище не може бути порожнім" };
+    errors.push({ lastName: "Прізвище не може бути порожнім" });
   }
 
-  if (!password) {
-    return { error: "Пароль не може бути порожнім" };
+  if (!password || password.toString().length < 8) {
+    errors.push({ password: "Пароль повинен містити не менше 8 символів" });
   }
 
   if (password !== confirmPassword) {
-    return { error: "Паролі не співпадають" };
+    errors.push({ confirmPassword: "Паролі не співпадають" });
+  }
+
+  if (errors.length > 0) {
+    return { error: errors };
   }
 
   try {
@@ -54,7 +60,10 @@ export async function signUp(
   } catch (error: unknown) {
     if (isAxiosError(error)) {
       return {
-        error: error.response?.data?.message || "Помилка створення користувача",
+        error:
+          error.response?.data?.errors ||
+          error.response?.data?.message ||
+          "Помилка створення користувача",
       };
     }
     return { error: "Помилка з'єднання" };

@@ -10,6 +10,7 @@ import {
 } from "../services/auth.service.ts";
 import { NODE_ENV } from "../configs/env.ts";
 import { generateAccessToken, verifyToken } from "../utils/jwt.ts";
+import { CreateUser } from "../validation/schemas/auth.schema.ts";
 
 export const postSignIn = async (
   req: Request,
@@ -25,40 +26,31 @@ export const postSignIn = async (
       confirmPassword,
       gender,
     }: CreateUserDTO = req.body;
+    const validated = CreateUser.safeParse({
+      email,
+      firstName,
+      lastName,
+      gender,
+      password,
+    });
 
-    if (
-      [email, firstName, lastName, password, confirmPassword].some((value) => {
-        return typeof value !== "string";
-      })
-    ) {
-      const error: AppError = new Error(
-        "Надані дані неправильного формату"
-      ) as AppError;
-      error.status = 400;
+    if (!validated.success) {
+      const errors = validated.error.issues.map((err) => {
+        const path = err.path[0];
+        const message = err.message;
 
-      throw error;
+        return { [path]: message };
+      });
+
+      return res.status(400).json({
+        success: false,
+        message: "Виправте помилки в даних",
+        errors,
+      });
     }
 
     if (password !== confirmPassword) {
       const error: AppError = new Error("Паролі не співпадають") as AppError;
-      error.status = 400;
-
-      throw error;
-    }
-
-    if (password.length < 8) {
-      const error: AppError = new Error(
-        "Пароль повинен мати мінімум 8 символів"
-      ) as AppError;
-      error.status = 400;
-
-      throw error;
-    }
-
-    console.log(gender);
-
-    if (gender && !["male", "female"].includes(gender)) {
-      const error: AppError = new Error("Обрано не існуючу стать") as AppError;
       error.status = 400;
 
       throw error;

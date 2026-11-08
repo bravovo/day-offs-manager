@@ -45,6 +45,12 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
   });
   const [memberEmail, setMemberEmail] = useState("");
   const [showMemberEmailError, setShowMemberEmailError] = useState(false);
+  const fieldErrors = Array.isArray(state.error)
+    ? Object.assign({}, ...state.error)
+    : {};
+  const updateFieldErrors = Array.isArray(updateState.error)
+    ? Object.assign({}, ...updateState.error)
+    : {};
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -103,20 +109,14 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
 
   useEffect(() => {
     const isDialogOpen =
-      createTeamDialogOpen ||
-      editTeamDialogOpen ||
-      confirmTeamDeleteDialogOpen;
+      createTeamDialogOpen || editTeamDialogOpen || confirmTeamDeleteDialogOpen;
 
     document.body.classList.toggle("overflow-hidden", isDialogOpen);
 
     return () => {
       document.body.classList.remove("overflow-hidden");
     };
-  }, [
-    createTeamDialogOpen,
-    editTeamDialogOpen,
-    confirmTeamDeleteDialogOpen,
-  ]);
+  }, [createTeamDialogOpen, editTeamDialogOpen, confirmTeamDeleteDialogOpen]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const openCreateDialog = () => {
@@ -263,6 +263,9 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                   }}
                   className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
                 />
+                {fieldErrors.title && (
+                  <p className="text-xs text-red-600">{fieldErrors.title}</p>
+                )}
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <label className="min-w-0 flex flex-col gap-1">
@@ -285,6 +288,11 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                     }}
                     className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
                   />
+                  {fieldErrors.maxDayOffs && (
+                    <p className="text-xs text-red-600">
+                      {fieldErrors.maxDayOffs}
+                    </p>
+                  )}
                 </label>
                 <label className="min-w-0 flex flex-col gap-1">
                   Кількість лікарняних
@@ -301,6 +309,11 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                     }}
                     className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
                   />
+                  {fieldErrors.maxSick && (
+                    <p className="text-xs text-red-600">
+                      {fieldErrors.maxSick}
+                    </p>
+                  )}
                 </label>
               </div>
               <label className="flex flex-col gap-1">
@@ -320,6 +333,9 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                     Накопичувальний (вихідні додаються кожного місяця)
                   </option>
                 </select>
+                {fieldErrors.system && (
+                  <p className="text-xs text-red-600">{fieldErrors.system}</p>
+                )}
               </label>
               <label className="flex flex-col gap-1">
                 Додати учасника (необов&apos;язково)
@@ -418,7 +434,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
               >
                 {isPending ? "Створення команди..." : "Створити команду"}
               </button>
-              {state.error && (
+              {state.error && typeof state.error === "string" && (
                 <p className="font-bold text-red-600">{state.error}</p>
               )}
             </div>
@@ -453,6 +469,11 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                   }}
                   className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
                 />
+                {updateFieldErrors.title && (
+                  <p className="text-xs text-red-600">
+                    {updateFieldErrors.title}
+                  </p>
+                )}
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <label className="min-w-0 flex flex-col gap-1">
@@ -475,6 +496,11 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                     }}
                     className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
                   />
+                  {updateFieldErrors.maxDayOffs && (
+                    <p className="text-xs text-red-600">
+                      {updateFieldErrors.maxDayOffs}
+                    </p>
+                  )}
                 </label>
                 <label className="min-w-0 flex flex-col gap-1">
                   Кількість лікарняних
@@ -492,6 +518,11 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                     className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
                   />
                 </label>
+                {updateFieldErrors.maxSick && (
+                  <p className="text-xs text-red-600">
+                    {updateFieldErrors.maxSick}
+                  </p>
+                )}
               </div>
               <label className="flex flex-col gap-1">
                 Тип накопичення вихідних
@@ -510,6 +541,11 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                     Накопичувальний (вихідні додаються кожного місяця)
                   </option>
                 </select>
+                {updateFieldErrors.system && (
+                  <p className="text-xs text-red-600">
+                    {updateFieldErrors.system}
+                  </p>
+                )}
               </label>
               <label className="flex flex-col gap-1">
                 Додати учасника (необов&apos;язково)
@@ -608,7 +644,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
               >
                 {isEditPending ? "Збереження змін..." : "Зберегти зміни"}
               </button>
-              {updateState.error && (
+              {updateState.error && typeof updateState.error === "string" && (
                 <p className="font-bold text-red-600">{updateState.error}</p>
               )}
             </div>
@@ -633,7 +669,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
             >
               <strong>Ви впевнені, що хочете видалити команду?</strong>
 
-              {deleteState.error && (
+              {deleteState.error && typeof deleteState.error === "string" && (
                 <p className="font-bold text-red-600">{deleteState.error}</p>
               )}
 

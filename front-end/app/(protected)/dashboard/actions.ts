@@ -4,7 +4,7 @@ import { SERVER_URL } from "@/configs/env";
 import { authenticatedFetch } from "@/lib/auth";
 
 export interface FormAction {
-  error?: string;
+  error?: string | Record<string, string>[];
   success?: boolean;
 }
 
@@ -20,28 +20,24 @@ export async function createTeam(
     .getAll("members")
     .filter((member): member is string => typeof member === "string");
 
-  if (!title) {
-    return {
-      error: "Назва команди не може бути порожня",
-    };
-  }
-
-  if (system !== "all-in" && system !== "accum") {
-    return {
-      error: "Неправильний тип накопичення вихідних",
-    };
-  }
+  const errors = [];
 
   if (!Number.isInteger(maxDayOffs) || maxDayOffs < 0) {
-    return {
-      error: "Максимальна кількість вихідних повинна бути цілим числом від 0",
-    };
+    errors.push({
+      maxDayOffs:
+        "Максимальна кількість вихідних повинна бути цілим числом від 0",
+    });
   }
 
   if (!Number.isInteger(maxSick) || maxSick < 0) {
-    return {
-      error: "Максимальна кількість лікарняних повинна бути цілим числом від 0",
-    };
+    errors.push({
+      maxSick:
+        "Максимальна кількість лікарняних повинна бути цілим числом від 0",
+    });
+  }
+
+  if (errors.length > 0) {
+    return { error: errors };
   }
 
   try {
@@ -60,9 +56,10 @@ export async function createTeam(
     });
 
     if (!response.ok) {
-      const data: { message?: string } = await response.json();
+      const data: { message?: string; errors?: Record<string, string>[] } =
+        await response.json();
       return {
-        error: data.message || "Помилка створення команди",
+        error: data.errors || data.message || "Помилка створення команди",
       };
     }
   } catch {
@@ -112,28 +109,24 @@ export async function editTeam(
     };
   }
 
-  if (!title) {
-    return {
-      error: "Назва команди не може бути порожня",
-    };
-  }
-
-  if (system !== "all-in" && system !== "accum") {
-    return {
-      error: "Неправильний тип накопичення вихідних",
-    };
-  }
+  const errors = [];
 
   if (!Number.isInteger(maxDayOffs) || maxDayOffs < 0) {
-    return {
-      error: "Максимальна кількість вихідних повинна бути цілим числом від 0",
-    };
+    errors.push({
+      maxDayOffs:
+        "Максимальна кількість вихідних повинна бути цілим числом від 0",
+    });
   }
 
   if (!Number.isInteger(maxSick) || maxSick < 0) {
-    return {
-      error: "Максимальна кількість лікарняних повинна бути цілим числом від 0",
-    };
+    errors.push({
+      maxSick:
+        "Максимальна кількість лікарняних повинна бути цілим числом від 0",
+    });
+  }
+
+  if (errors.length > 0) {
+    return { error: errors };
   }
 
   try {
@@ -152,9 +145,10 @@ export async function editTeam(
     });
 
     if (!response.ok) {
-      const data: { message?: string } = await response.json();
+      const data: { message?: string; errors?: Record<string, string>[] } =
+        await response.json();
       return {
-        error: data.message || "Помилка оновлення команди",
+        error: data.errors || data.message || "Помилка оновлення команди",
       };
     }
   } catch {
