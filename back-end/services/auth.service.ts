@@ -1,7 +1,13 @@
+import mongoose from "mongoose";
 import User from "../schemas/user.schema.ts";
-import type { AppError, UserNoRole } from "../types/types.ts";
+import {
+  ErrorExtended,
+  type AppError,
+  type UserNoRole,
+} from "../types/types.ts";
 import { generateAccessToken, generateRefreshToken } from "../utils/jwt.ts";
 import bcrypt from "bcryptjs";
+import Team from "../schemas/team.schema.ts";
 
 const DUMMY_PASSWORD_HASH =
   "$2b$12$DqbIOSY1Qh22MqITM4EGyeMlFZY8y37jCaQ40JB1.H8vsfz08D/VS";
@@ -95,5 +101,40 @@ export const getCurrentUserService = async (userId: string) => {
     throw error;
   }
 
-  return user;
+  const team = await Team.findOne({
+    members: {
+      $elemMatch: {
+        memberId: userId,
+      },
+    },
+  });
+
+  return { user, teamId: team?._id.toString() };
+};
+
+export const getCurrentUserRole = async (userId: string | undefined) => {
+  if (!mongoose.isValidObjectId(userId)) {
+    throw new ErrorExtended(400, "Ідентифікатор користувача невірний");
+  }
+
+  const team = await Team.findOne({
+    members: {
+      $elemMatch: {
+        memberId: userId,
+      },
+    },
+  }).populate({
+    path: "members.memberId",
+    select: "role",
+  });
+
+  const member = team?.members.find(
+    (member) => member.memberId._id.toString() === userId
+  );
+
+  if (!member) {
+    return null;
+  }
+
+  return member.role;
 };

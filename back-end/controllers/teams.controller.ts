@@ -79,7 +79,7 @@ export const postTeamController = async (
     const teamMembers: TeamMember[] = existingUsers
       .filter((user) => String(user._id) !== authorId)
       .map((user) => {
-        return { memberId: user._id, role: "worker" };
+        return { memberId: user._id, role: "worker", day: 0, sick: 0 };
       });
 
     const teamToCreate: Team = {
@@ -91,6 +91,8 @@ export const postTeamController = async (
         {
           memberId: new mongoose.Types.ObjectId(authorId),
           role: "super",
+          day: 0,
+          sick: 0,
         },
         ...teamMembers,
       ],
@@ -246,7 +248,12 @@ export const updateTeamController = async (
     const teamMembers: TeamMember[] = existingUsers.map((user) => {
       const member = normalizedMembers.find((m) => m.email === user.email);
 
-      return { memberId: user._id, role: member?.role ?? "worker" };
+      return {
+        memberId: user._id,
+        role: member?.role ?? "worker",
+        day: 0,
+        sick: 0,
+      };
     });
 
     const teamToUpdate: Team = {

@@ -183,6 +183,8 @@ export const updateTeamService = async (updatedTeam: Team, userId: string) => {
       )
         ? "super"
         : member.role,
+      day: member.day ? member.day : 0,
+      sick: member.sick ? member.sick : 0,
     });
   }
 

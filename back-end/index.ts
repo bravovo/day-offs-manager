@@ -5,10 +5,11 @@ import mongoose from "mongoose";
 import { connectDB } from "./configs/database.js";
 
 import { PORT, CLIENT_ORIGIN } from "./configs/env.js";
-import type { AppError } from "./types/types.ts";
+import type { AppError, ErrorExtended } from "./types/types.ts";
 
 import authRoute from "./routes/auth.route.ts";
 import teamsRoute from "./routes/teams.route.ts";
+import requestsRoute from "./routes/requests.route.ts";
 import { requireAuth } from "./middleware/auth.middleware.ts";
 
 const app = express();
@@ -45,10 +46,11 @@ app.use("/api/v1/auth", authRoute);
 app.use(requireAuth);
 
 app.use("/api/v1/teams", teamsRoute);
+app.use("/api/v1/requests", requestsRoute);
 
 app.use(
   (
-    err: Error | AppError,
+    err: Error | AppError | ErrorExtended,
     _req: express.Request,
     res: express.Response,
     _next: express.NextFunction
