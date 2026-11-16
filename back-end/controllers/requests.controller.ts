@@ -289,9 +289,14 @@ export const patchMarkRequest = async (
       });
     }
 
-    const { newStatus, requestId } = req.body;
+    const { newStatus } = req.body;
+    const { requestId } = req.params;
 
-    const validated = PatchMarkRequest.safeParse({ newStatus, requestId });
+    const validated = PatchMarkRequest.safeParse({
+      newStatus,
+      requestId,
+      reviewerId: req.user.id,
+    });
 
     if (!validated.success) {
       return res.status(400).json({
@@ -305,6 +310,7 @@ export const patchMarkRequest = async (
       {
         newStatus: validated.data.newStatus,
         requestId: validated.data.requestId,
+        reviewerId: validated.data.reviewerId,
       }
     );
 

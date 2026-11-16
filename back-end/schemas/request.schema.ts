@@ -37,6 +37,11 @@ const requestSchema = new Schema(
       enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
+    reviewedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: false,
+      ref: "User",
+    },
   },
   { timestamps: true }
 );

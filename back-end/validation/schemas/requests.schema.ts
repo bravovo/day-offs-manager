@@ -58,4 +58,5 @@ export const GetRequests = z.object({
 export const PatchMarkRequest = z.object({
   newStatus: requestStatusSchema,
   requestId: z.string("Ідентифікатор запиту вказаний невірно"),
+  reviewerId: z.string("Ідентифікатор користувача вказаний невірно"),
 });

@@ -90,3 +90,41 @@ export async function createRequest(
 
   return { success: true };
 }
+
+export async function reviewRequest(
+  _previousState: FormAction,
+  formData: FormData
+): Promise<FormAction> {
+  const requestId = formData.get("requestId");
+  const decision = formData.get("decision");
+
+  if (typeof requestId !== "string" || typeof decision !== "string") {
+    return { error: "Некоректні дані запиту" };
+  }
+
+  if (decision !== "approved" && decision !== "rejected") {
+    return { error: "Некоректне рішення" };
+  }
+
+  try {
+    const response = await authenticatedFetch(
+      `${SERVER_URL}/v1/requests/${requestId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ newStatus: decision }),
+      }
+    );
+
+    if (!response.ok) {
+      const data: { message?: string } = await response.json();
+      return { error: data.message || "Помилка оновлення запиту" };
+    }
+  } catch {
+    return { error: "Помилка з'єднання" };
+  }
+
+  return { success: true };
+}

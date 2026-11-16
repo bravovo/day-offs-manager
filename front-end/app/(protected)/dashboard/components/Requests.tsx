@@ -3,19 +3,15 @@
 import {
   CurrentUserResponse,
   DialogRequest,
+  Request,
   Requests as RequestsType,
 } from "@/types/types";
 import { useActionState, useEffect, useState, useTransition } from "react";
-import { createRequest } from "../requestsActions";
+import { createRequest, reviewRequest } from "../requestsActions";
 import { useRouter } from "next/navigation";
 import { Loader, Plus } from "lucide-react";
-
-const formatDateInput = (date: Date) =>
-  [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0"),
-  ].join("-");
+import { formatDateInput } from "@/utils/utils";
+import ReviewRequestDialog from "./ReviewRequestDialog";
 
 export interface RequestsProps {
   userRequests: RequestsType;
@@ -35,8 +31,16 @@ export default function Requests({
     createRequest,
     {}
   );
+  const [reviewState, reviewAction, isReviewPending] = useActionState(
+    reviewRequest,
+    {}
+  );
   const [isSubmitting, startSubmitTransition] = useTransition();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [reviewRequestData, setReviewRequestData] = useState<Request | null>(
+    null
+  );
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showCreateErrors, setShowCreateErrors] = useState(false);
   const [dialogData, setDialogData] = useState<DialogRequest>({
@@ -83,6 +87,17 @@ export default function Requests({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsRefreshing(false);
   }, [userRequests]);
+
+  useEffect(() => {
+    if (!reviewState.success) {
+      return;
+    }
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setReviewDialogOpen(false);
+    setReviewRequestData(null);
+    router.refresh();
+  }, [reviewState.success, router]);
 
   const fieldErrors =
     createState.error && typeof createState.error === "object"
@@ -146,6 +161,10 @@ export default function Requests({
                     return (
                       <div
                         key={req._id}
+                        onClick={() => {
+                          setReviewRequestData(req);
+                          setReviewDialogOpen(true);
+                        }}
                         className={`h-40 rounded-xl p-4 shadow-sm flex items-start justify-between gap-2 ${
                           req.status === "pending"
                             ? "bg-gray-100"
@@ -166,9 +185,11 @@ export default function Requests({
                           {req.author &&
                             (String(req.author._id) ===
                             String(userResponse.user._id) ? (
-                              <div className="mt-1">Автор: Ви</div>
+                              <div className="mt-1 text-xs font-bold">
+                                Автор: Ви
+                              </div>
                             ) : (
-                              <div className="mt-1">
+                              <div className="mt-1 text-xs font-bold">
                                 {req.author.firstName} {req.author.lastName} (
                                 <a
                                   href={`mailto:${req.author.email}`}
@@ -258,7 +279,35 @@ export default function Requests({
                           </span>
                         )}
                       </div>
-                      <div className="mt-1">Автор: Ви</div>
+                      <div className="mt-1 text-xs font-bold">
+                        {req.reviewedBy &&
+                          (String(req.reviewedBy._id) ===
+                          String(userResponse.user._id) ? (
+                            <div className="mt-1">
+                              Ви{" "}
+                              {req.status === "approved"
+                                ? "погодили"
+                                : "відхилили"}{" "}
+                              цей запит
+                            </div>
+                          ) : (
+                            <div className="mt-1 text-xs font-bold">
+                              {req.status === "approved"
+                                ? "Погодив"
+                                : "Відхилив"}
+                              {": "}
+                              {req.reviewedBy.firstName}{" "}
+                              {req.reviewedBy.lastName} (
+                              <a
+                                href={`mailto:${req.reviewedBy.email}`}
+                                className="underline"
+                              >
+                                {req.reviewedBy.email}
+                              </a>
+                              )
+                            </div>
+                          ))}
+                      </div>
                       <div className="mt-1">
                         {new Date(req.startDate).toISOString().split("T")[0]} →{" "}
                         {new Date(req.endDate).toISOString().split("T")[0]}
@@ -278,6 +327,7 @@ export default function Requests({
             )}
           </div>
         </div>
+
         {createDialogOpen && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-gray-500/80 p-1.5 md:p-4"
@@ -383,7 +433,7 @@ export default function Requests({
                     }
                     className="w-full border border-zinc-400 focus:border-teal-950 rounded-md outline-none p-2"
                   >
-                    <option value="day">Відпустка</option>
+                    <option value="day">Вихідний (відпустка)</option>
                     <option value="sick">Лікарняний</option>
                   </select>
                   {showCreateErrors && fieldErrors.type && (
@@ -429,6 +479,20 @@ export default function Requests({
               </div>
             </form>
           </div>
+        )}
+
+        {reviewDialogOpen && reviewRequestData && (
+          <ReviewRequestDialog
+            open={reviewDialogOpen}
+            action={reviewAction}
+            isPending={isReviewPending}
+            onClose={() => {
+              setReviewDialogOpen(false);
+              setReviewRequestData(null);
+            }}
+            canReviewRequest={canReviewRequests}
+            request={reviewRequestData}
+          />
         )}
       </div>
     </div>

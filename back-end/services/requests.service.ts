@@ -144,11 +144,19 @@ export const getRequestsService = async ({
 }: GetRequestsProps) => {
   const userFilters = [...(authorId ? [{ userId: authorId }] : [])];
 
+  const statusOrder: Record<RequestStatus, number> = {
+    approved: 0,
+    rejected: 1,
+    pending: 2,
+  };
+
   const requests = await Request.find({
     ...(status ? { status } : {}),
     ...(type ? { type } : {}),
     ...(userFilters.length ? { $and: userFilters } : {}),
   });
+
+  requests.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
 
   if (requests === null || requests === undefined) {
     throw new ErrorExtended(500, "Помилка отримання запитів");
@@ -190,30 +198,58 @@ export const getRequestsService = async ({
   const authorIds = [
     ...new Set(visibleRequests.map((request) => String(request.userId))),
   ];
+  const reviewerIds = [
+    ...new Set(
+      visibleRequests
+        .map((request) =>
+          request.reviewedBy ? String(request.reviewedBy) : null
+        )
+        .filter((reviewerId): reviewerId is string => reviewerId !== null)
+    ),
+  ];
   const authors = await User.find({ _id: { $in: authorIds } })
+    .select("_id firstName lastName email")
+    .lean();
+  const reviewers = await User.find({ _id: { $in: reviewerIds } })
     .select("_id firstName lastName email")
     .lean();
   const authorsById = new Map(
     authors.map((author) => [String(author._id), author])
   );
+  const reviewersById = new Map(
+    reviewers.map((reviewer) => [String(reviewer._id), reviewer])
+  );
 
   return visibleRequests.map((request) => ({
     ...request.toObject(),
     author: authorsById.get(String(request.userId)) ?? null,
+    reviewedBy: request.reviewedBy
+      ? (reviewersById.get(String(request.reviewedBy)) ?? null)
+      : null,
   }));
 };
 
 export interface PatchMarkRequestProps {
   requestId: string;
   newStatus: RequestStatus;
+  reviewerId: string;
 }
 
 export const patchMarkRequestService = async ({
   requestId,
   newStatus,
+  reviewerId,
 }: PatchMarkRequestProps) => {
   if (!mongoose.isValidObjectId(requestId)) {
     throw new ErrorExtended(400, "Ідентифікатор запиту невірний");
+  }
+  if (!mongoose.isValidObjectId(reviewerId)) {
+    throw new ErrorExtended(400, "Ідентифікатор користувача невірний");
+  }
+
+  const reviewer = await User.findById(reviewerId);
+  if (!reviewer) {
+    throw new ErrorExtended(404, "Користувача, що перевіряє запит не знайдено");
   }
 
   const request = await Request.findById(requestId);
@@ -226,6 +262,23 @@ export const patchMarkRequestService = async ({
   );
   if (!team) {
     throw new ErrorExtended(404, "Команду не знайдено");
+  }
+
+  const reviewerMember = team.members.find(
+    (member) => String(member.memberId) === String(reviewerId)
+  );
+  if (!reviewerMember) {
+    throw new ErrorExtended(
+      404,
+      "Помилка ідентифікації користувача, що перевіряє запит"
+    );
+  }
+
+  if (!["super", "admin"].includes(reviewerMember.role)) {
+    throw new ErrorExtended(
+      403,
+      "Користувачу, що перевіряє запит, недозволено цієї дії"
+    );
   }
 
   const teamMember = team.members.find(
@@ -270,7 +323,8 @@ export const patchMarkRequestService = async ({
 
     updatedRequest = await Request.findOneAndUpdate(
       { _id: requestId },
-      { status: newStatus }
+      { status: newStatus, reviewedBy: reviewerId },
+      { returnDocument: "after", session }
     );
     if (!updatedRequest) {
       throw new ErrorExtended(500, "Помилка оновлення статусу запиту");
@@ -285,19 +339,24 @@ export const patchMarkRequestService = async ({
         },
       },
       request.type === "day"
-        ? { day: teamMember.day + finalInterval }
-        : { sick: teamMember.sick + finalInterval }
+        ? {
+            day: teamMember.day + finalInterval,
+          }
+        : {
+            sick: teamMember.sick + finalInterval,
+          },
+      { returnDocument: "after", session }
     );
     if (!updatedTeamMember) {
       throw new ErrorExtended(500, "Помилка оновлення статусу запиту");
     }
 
-    session.commitTransaction();
+    await session.commitTransaction();
   } catch (error) {
-    session.abortTransaction();
+    await session.abortTransaction();
     throw error;
   } finally {
-    session.endSession();
+    await session.endSession();
   }
 
   return { updatedRequest, updatedTeamMember };

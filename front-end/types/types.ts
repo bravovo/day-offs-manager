@@ -93,7 +93,7 @@ export interface CurrentUserResponse {
 
 export type RequestType = "day" | "sick";
 
-export interface RequestAuthor {
+export interface RequestActor {
   _id: string;
   firstName: string;
   lastName: string;
@@ -110,7 +110,8 @@ export interface Request {
   userId: string;
   halfDay?: boolean;
   description?: string;
-  author?: RequestAuthor | null;
+  author?: RequestActor | null;
+  reviewedBy?: RequestActor | null;
 }
 
 export type DialogRequest = Omit<Request, "_id">;
