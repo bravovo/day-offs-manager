@@ -1,6 +1,6 @@
 "use client";
 
-import { deleteTeam, editTeam } from "@/app/(protected)/dashboard/actions";
+import { deleteTeam, editTeam } from "@/app/(protected)/teams/teamActions";
 import { CurrentUser, EditTeam2, ExpandedTeamResponse } from "@/types/types";
 import { useActionState, useEffect, useState } from "react";
 import {

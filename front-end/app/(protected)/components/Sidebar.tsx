@@ -3,9 +3,21 @@ import Link from "next/link";
 import { logout } from "@/lib/logout";
 import LogoutButton from "./LogoutButton";
 
-const navigationItems = [{ href: "/dashboard", label: "Робоче середовище" }];
+type NavigationItem = {
+  href: string;
+  label: string;
+};
 
-export default function Sidebar() {
+const navigationItems: NavigationItem[] = [
+  { href: "/dashboard", label: "Робоче середовище" },
+  { href: "/teams", label: "Команди" },
+];
+
+export default function Sidebar({ hasTeam }: { hasTeam: boolean }) {
+  const visibleNavigationItems = hasTeam
+    ? navigationItems
+    : navigationItems.filter((item) => item.href !== "/dashboard");
+
   return (
     <aside
       className="fixed bottom-0 left-0 z-10 flex w-full shrink-0 flex-col bg-teal-950
@@ -13,7 +25,7 @@ export default function Sidebar() {
     >
       <nav className="flex-1 py-4">
         <ul className="flex justify-around gap-1 md:flex-col">
-          {navigationItems.map((item) => (
+          {visibleNavigationItems.map((item) => (
             <li key={item.href}>
               <Link
                 href={item.href}
