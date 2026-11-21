@@ -83,12 +83,7 @@ export const getSuperAdminTeamsService = async (userId: string) => {
   }
 
   const teams = await MongoTeam.find({
-    members: {
-      $elemMatch: {
-        memberId: userId,
-        role: "super",
-      },
-    },
+    "members.memberId": userId,
   }).populate({
     path: "members.memberId",
     select: "firstName lastName email",
@@ -183,6 +178,8 @@ export const updateTeamService = async (updatedTeam: Team, userId: string) => {
       )
         ? "super"
         : member.role,
+      day: member.day ? member.day : 0,
+      sick: member.sick ? member.sick : 0,
     });
   }
 

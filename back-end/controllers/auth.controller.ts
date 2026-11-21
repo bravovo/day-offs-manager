@@ -5,6 +5,7 @@ import type { CreateUserDTO } from "../types/dto.ts";
 import type { AppError } from "../types/types.ts";
 import {
   createUserService,
+  getCurrentUserRole,
   getCurrentUserService,
   loginUserService,
 } from "../services/auth.service.ts";
@@ -168,11 +169,16 @@ export const getCurrentUser = async (
       });
     }
 
-    const user = await getCurrentUserService(req.user.id);
+    const { user, teamId } = await getCurrentUserService(req.user.id);
+    const teamIdParam =
+      typeof req.query.teamId === "string" ? req.query.teamId : teamId;
+    const userRole = await getCurrentUserRole(req.user.id, teamIdParam);
 
     return res.status(200).json({
       success: true,
       user,
+      teamId,
+      userRole,
     });
   } catch (error) {
     next(error);

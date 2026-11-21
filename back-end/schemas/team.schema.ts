@@ -32,6 +32,16 @@ const teamSchema = new Schema(
           enum: ["super", "admin", "manager", "worker"],
           required: true,
         },
+        day: {
+          type: Number,
+          default: 0,
+          required: true,
+        },
+        sick: {
+          type: Number,
+          default: 0,
+          required: true,
+        },
       },
     ],
   },

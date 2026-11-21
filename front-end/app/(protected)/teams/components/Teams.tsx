@@ -1,13 +1,13 @@
 "use client";
 
 import { Loader } from "@/app/components/Loader/Loader";
-import { CreateTeam, TeamsResponse } from "@/types/types";
+import { CreateTeam, CurrentUser, Team } from "@/types/types";
 import { useActionState, useEffect, useState } from "react";
 import {
   createTeam,
   deleteTeam,
   editTeam,
-} from "@/app/(protected)/dashboard/actions";
+} from "@/app/(protected)/teams/teamActions";
 import {
   EMAIL_REGEX,
   MEMBER_EMAIL_EMPTY_ERROR,
@@ -17,8 +17,21 @@ import { useRouter } from "next/navigation";
 import { Plus, Settings, Trash, X } from "lucide-react";
 import Link from "next/link";
 
-export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
+export interface TeamsProps {
+  teams: Team[];
+  user: CurrentUser;
+}
+
+export function Teams({ teams, user }: TeamsProps) {
   const router = useRouter();
+  const isTeamSuper = (team: Team) =>
+    team.members.some((member) => {
+      const memberId =
+        typeof member.memberId === "string"
+          ? member.memberId
+          : member.memberId._id;
+      return memberId === user._id && member.role === "super";
+    });
   const [createTeamDialogOpen, setCreateTeamDialogOpen] = useState(false);
   const [editTeamDialogOpen, setEditTeamDialogOpen] = useState(false);
   const [confirmTeamDeleteDialogOpen, setConfirmTeamDeleteDialogOpen] =
@@ -181,18 +194,18 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
     <div className="flex flex-1 flex-col items-center bg-zinc-50">
       {(isPending || isRefreshing) && <Loader />}
       <div className="flex w-full max-w-4xl flex-1 flex-col items-center gap-4 bg-white py-16 sm:items-start">
-        <h1 className="text-2xl font-bold">Робоче середовище</h1>
+        <div className="w-full flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Ваші команди</h1>
+          <button
+            className="bg-teal-800 hover:bg-teal-700 text-white font-bold px-2 py-2 
+                      rounded-md transition-all cursor-pointer duration-200 content-end"
+            onClick={openCreateDialog}
+          >
+            <Plus className="hover:rotate-90 duration-500" />
+          </button>
+        </div>
+
         <section className="w-full rounded-md bg-teal-950 p-3 text-white">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold">Створенні Команди</h2>{" "}
-            <button
-              className="bg-teal-800 hover:bg-teal-700 text-white font-bold px-2 py-2 
-                      rounded-md transition-all cursor-pointer duration-200"
-              onClick={openCreateDialog}
-            >
-              <Plus className="hover:rotate-90 duration-500" />
-            </button>
-          </div>
           {teams.length === 0 ? (
             <div className="w-full flex justify-center items-center p-5 h-48">
               <div className="mt-3 text-center">
@@ -209,7 +222,7 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
               </div>
             </div>
           ) : (
-            <ul className="mt-3 space-y-2">
+            <ul className="space-y-2">
               {teams.map((team) => (
                 <li
                   key={team._id}
@@ -226,36 +239,40 @@ export function Dashboard({ teams }: Pick<TeamsResponse, "teams">) {
                     </p>
                   </Link>
                   <div className="flex gap-1">
-                    <button
-                      className="bg-red-900 hover:bg-red-800 text-white font-bold px-2 py-2 
-                      rounded-md transition-all cursor-pointer duration-200"
-                      onClick={() => {
-                        setShowDeleteErrors(false);
-                        setConfirmTeamDeleteDialogOpen(true);
-                        setTeamToDelete(team._id);
-                      }}
-                    >
-                      <Trash />
-                    </button>
-                    <button
-                      className="bg-teal-900 hover:bg-teal-700 text-white font-bold px-2 py-2 
-                      rounded-md transition-all cursor-pointer duration-200"
-                      onClick={() => {
-                        setTeamToEdit(team);
-                        setDialogData({
-                          id: team._id,
-                          title: team.title,
-                          maxDayOffs: team.maxOff,
-                          maxSick: team.maxSick,
-                          system: team.system,
-                          members: [],
-                        });
-                        setShowUpdateErrors(false);
-                        setEditTeamDialogOpen(true);
-                      }}
-                    >
-                      <Settings className="hover:rotate-180 duration-500" />
-                    </button>
+                    {isTeamSuper(team) && (
+                      <>
+                        <button
+                          className="bg-red-900 hover:bg-red-800 text-white font-bold px-2 py-2 
+                          rounded-md transition-all cursor-pointer duration-200"
+                          onClick={() => {
+                            setShowDeleteErrors(false);
+                            setConfirmTeamDeleteDialogOpen(true);
+                            setTeamToDelete(team._id);
+                          }}
+                        >
+                          <Trash />
+                        </button>
+                        <button
+                          className="bg-teal-900 hover:bg-teal-700 text-white font-bold px-2 py-2 
+                          rounded-md transition-all cursor-pointer duration-200"
+                          onClick={() => {
+                            setTeamToEdit(team);
+                            setDialogData({
+                              id: team._id,
+                              title: team.title,
+                              maxDayOffs: team.maxOff,
+                              maxSick: team.maxSick,
+                              system: team.system,
+                              members: [],
+                            });
+                            setShowUpdateErrors(false);
+                            setEditTeamDialogOpen(true);
+                          }}
+                        >
+                          <Settings className="hover:rotate-180 duration-500" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </li>
               ))}

@@ -4,6 +4,15 @@ export interface AppError extends Error {
   status: number;
 }
 
+export class ErrorExtended extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
 export type Role = "super" | "admin" | "manager" | "worker" | "user";
 export type ExcludeRole = Exclude<Role, "user">;
 
@@ -21,6 +30,8 @@ export type UserNoRole = Omit<User, "role">;
 export interface TeamMember {
   memberId: mongoose.Types.ObjectId;
   role: ExcludeRole;
+  day: number;
+  sick: number;
 }
 
 export type DayOffSystem = "all-in" | "accum";
@@ -33,3 +44,7 @@ export interface Team {
   system: DayOffSystem;
   members: TeamMember[];
 }
+
+export type RequestType = "day" | "sick";
+
+export type RequestStatus = "pending" | "approved" | "rejected";
