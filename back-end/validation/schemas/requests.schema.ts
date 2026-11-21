@@ -53,10 +53,17 @@ export const GetRequests = z.object({
   status: z.optional(requestStatusSchema),
   type: z.optional(typeSchema),
   authorId: z.optional(z.string("Ідентифікатор команди вказаний невірно")),
+  teamId: z.optional(z.string("Ідентифікатор команди вказаний невірно")),
 });
 
 export const PatchMarkRequest = z.object({
   newStatus: requestStatusSchema,
   requestId: z.string("Ідентифікатор запиту вказаний невірно"),
   reviewerId: z.string("Ідентифікатор користувача вказаний невірно"),
+});
+
+export const GetRemains = z.object({
+  userId: z.string("Ідентифікатор користувача вказаний невірно"),
+  teamId: z.string("Ідентифікатор команди вказаний невірно"),
+  userRole: roleSchema,
 });

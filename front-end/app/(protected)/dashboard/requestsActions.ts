@@ -56,6 +56,12 @@ export async function createRequest(
     };
   }
 
+  if (validated.data.halfDay && validated.data.startDate !== validated.data.endDate) {
+    return {
+      error: { halfDay: "Для половини дня дата початку має дорівнювати даті кінця" },
+    };
+  }
+
   try {
     const response = await authenticatedFetch(`${SERVER_URL}/v1/requests`, {
       method: "POST",
@@ -72,16 +78,36 @@ export async function createRequest(
       }),
     });
 
-    console.log("RESPONSE", response.ok, response);
-
     if (!response.ok) {
-      const data: { message?: string; errors?: Record<string, string>[] } =
-        await response.json();
+      const data: {
+        message?: string;
+        errors?: {
+          fieldErrors?: Record<string, string[]>;
+          formErrors?: string[];
+        };
+      } = await response.json();
+
+      if (data.errors?.fieldErrors) {
+        const fieldErrors = Object.entries(data.errors.fieldErrors).reduce<
+          Record<string, string>
+        >((errors, [field, messages]) => {
+          if (messages?.[0]) {
+            errors[field] = messages[0];
+          }
+          return errors;
+        }, {});
+
+        if (Object.keys(fieldErrors).length > 0) {
+          return { error: fieldErrors };
+        }
+      }
+
+      if (data.errors?.formErrors?.[0]) {
+        return { error: data.errors.formErrors[0] };
+      }
+
       return {
-        error:
-          (data.errors && Object.assign({}, ...data.errors)) ||
-          data.message ||
-          "Помилка створення запиту",
+        error: data.message || "Помилка створення запиту",
       };
     }
   } catch {

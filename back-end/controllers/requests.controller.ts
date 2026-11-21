@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import type { CreateDayOffRequest } from "../types/dto.ts";
 import {
+  GetRemains,
   GetRequest,
   GetRequests,
   PatchMarkRequest,
@@ -9,6 +10,7 @@ import {
 import * as z from "zod";
 import {
   createRequestService,
+  getRemainsService,
   getRequestService,
   getRequestsService,
   patchMarkRequestService,
@@ -22,7 +24,7 @@ export const postNewRequest = async (
   next: NextFunction
 ) => {
   try {
-    const freshRole = await getCurrentUserRole(req.user?.id);
+    const freshRole = await getCurrentUserRole(req.user?.id, req.body.teamId);
 
     if (!freshRole || !req.user || !req.user.id) {
       return res.status(401).json({
@@ -168,14 +170,18 @@ export const getRequests = async (
   next: NextFunction
 ) => {
   try {
-    const freshRole = await getCurrentUserRole(req.user?.id);
-
     if (!req.user || !req.user.id) {
       return res.status(401).json({
         success: false,
         message: "Потрібно авторизуватись",
       });
     }
+
+    const { status, authorId, type, teamId } = req.query;
+    const freshRole = await getCurrentUserRole(
+      req.user.id,
+      typeof teamId === "string" ? teamId : undefined
+    );
 
     if (!freshRole) {
       return res.sendStatus(204);
@@ -186,9 +192,7 @@ export const getRequests = async (
     const userId = req.user.id;
     const userRole = req.user.role;
 
-    const { status, authorId, type } = req.query;
-
-    const validated = GetRequests.safeParse({ status, authorId, type });
+    const validated = GetRequests.safeParse({ status, authorId, type, teamId });
 
     if (!validated.success) {
       return res.status(400).json({
@@ -245,6 +249,7 @@ export const getRequests = async (
       status: data.status,
       authorId: data.authorId,
       type: data.type,
+      teamId: data.teamId,
       requesterId: userId,
     });
 
@@ -326,6 +331,58 @@ export const patchMarkRequest = async (
       message: "Статус запиту успішно оновлено",
       updatedRequest,
       updatedTeamMember,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUserRemains = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const freshRole = await getCurrentUserRole(req.user?.id);
+
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Потрібно авторизуватись",
+      });
+    }
+
+    if (!freshRole) {
+      return res.sendStatus(204);
+    }
+
+    req.user.role = freshRole;
+
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const teamId = typeof req.query.teamId === "string"
+      ? req.query.teamId
+      : "";
+
+    const validated = GetRemains.safeParse({ userId, teamId, userRole });
+
+    if (!validated.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Вхідні дані містять помилку",
+        errors: z.flattenError(validated.error),
+      });
+    }
+
+    const remains = await getRemainsService({
+      userId: validated.data.userId,
+      teamId: validated.data.teamId,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Залишки отримано успішно",
+      remains,
     });
   } catch (error) {
     next(error);

@@ -1,5 +1,5 @@
 import * as z from "zod";
-import type { RequestType } from "../types/types.ts";
+import type { DayOffSystem, RequestType } from "../types/types.ts";
 
 // export const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
@@ -19,6 +19,18 @@ export function getDaysInterval(startDate: Date, endDate: Date): number {
       (endDate.getTime() - startDate.getTime()) / MILLISECONDS_PER_DAY
     ) + 1
   );
+}
+
+export function getAvailableDayOffs(
+  maxOff: number,
+  system: DayOffSystem,
+  date: Date = new Date()
+): number {
+  if (system === "all-in") {
+    return maxOff;
+  }
+
+  return Math.min(maxOff, (maxOff / 12) * (date.getUTCMonth() + 1));
 }
 
 export interface IsAllowedToMakeRequestProps {

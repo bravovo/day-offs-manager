@@ -112,12 +112,20 @@ export const getCurrentUserService = async (userId: string) => {
   return { user, teamId: team?._id.toString() };
 };
 
-export const getCurrentUserRole = async (userId: string | undefined) => {
+export const getCurrentUserRole = async (
+  userId: string | undefined,
+  teamId?: string
+) => {
   if (!mongoose.isValidObjectId(userId)) {
     throw new ErrorExtended(400, "Ідентифікатор користувача невірний");
   }
 
+  if (teamId && !mongoose.isValidObjectId(teamId)) {
+    throw new ErrorExtended(400, "Ідентифікатор команди невірний");
+  }
+
   const team = await Team.findOne({
+    ...(teamId ? { _id: teamId } : {}),
     members: {
       $elemMatch: {
         memberId: userId,

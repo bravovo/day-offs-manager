@@ -3,6 +3,7 @@
 import {
   CurrentUserResponse,
   DialogRequest,
+  Remains,
   Request,
   Requests as RequestsType,
 } from "@/types/types";
@@ -18,6 +19,8 @@ export interface RequestsProps {
   adminRequests: RequestsType | null;
   canReviewRequests: boolean;
   userResponse: CurrentUserResponse;
+  remains: Remains;
+  teamId?: string;
 }
 
 export default function Requests({
@@ -25,6 +28,8 @@ export default function Requests({
   adminRequests,
   canReviewRequests,
   userResponse,
+  remains,
+  teamId,
 }: RequestsProps) {
   const router = useRouter();
   const [createState, formAction, isCreatePending] = useActionState(
@@ -43,6 +48,9 @@ export default function Requests({
   );
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showCreateErrors, setShowCreateErrors] = useState(false);
+  const [createSubmitted, setCreateSubmitted] = useState(false);
+  const [showReviewError, setShowReviewError] = useState(false);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
   const [dialogData, setDialogData] = useState<DialogRequest>({
     status: "pending",
     type: "day",
@@ -62,11 +70,12 @@ export default function Requests({
   }, [createState.error]);
 
   useEffect(() => {
-    if (!createState.success) {
+    if (!createSubmitted || !createState.success) {
       return;
     }
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCreateSubmitted(false);
     setIsRefreshing(true);
     setDialogData({
       status: "pending",
@@ -81,7 +90,7 @@ export default function Requests({
     setShowCreateErrors(false);
     setCreateDialogOpen(false);
     router.refresh();
-  }, [router, createState]);
+  }, [router, createState, createSubmitted]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -89,15 +98,24 @@ export default function Requests({
   }, [userRequests]);
 
   useEffect(() => {
-    if (!reviewState.success) {
+    if (!reviewSubmitted || !reviewState.success) {
       return;
     }
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
+    setReviewSubmitted(false);
+    setShowReviewError(false);
     setReviewDialogOpen(false);
     setReviewRequestData(null);
     router.refresh();
-  }, [reviewState.success, router]);
+  }, [router, reviewState.success, reviewSubmitted]);
+
+  useEffect(() => {
+    if (reviewState.error) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setShowReviewError(true);
+    }
+  }, [reviewState.error]);
 
   const fieldErrors =
     createState.error && typeof createState.error === "object"
@@ -112,6 +130,7 @@ export default function Requests({
     ) ?? [];
 
   const openCreateDialog = () => {
+    setCreateSubmitted(false);
     setDialogData({
       status: "pending",
       type: "day",
@@ -138,7 +157,17 @@ export default function Requests({
   return (
     <div className="flex flex-1 flex-col items-center bg-zinc-50">
       {(isCreatePending || isRefreshing) && <Loader />}
-      <div className="flex w-full max-w-4xl flex-1 flex-col items-center gap-4 bg-white py-16 sm:items-start">
+      <div className="flex w-full max-w-4xl flex-1 flex-col items-center gap-4 pb-4 bg-white sm:items-start">
+        <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="rounded-xl bg-teal-900 p-4 text-white">
+            <p className="text-sm font-medium">Залишилось вихідних</p>
+            <p className="mt-1 text-3xl font-bold">{remains.day}</p>
+          </div>
+          <div className="rounded-xl bg-amber-900 p-4 text-white">
+            <p className="text-sm font-medium">Залишилось лікарняних</p>
+            <p className="mt-1 text-3xl font-bold">{remains.sick}</p>
+          </div>
+        </div>
         {canReviewRequests && adminRequests && (
           <div className="w-full">
             <div className="flex justify-between items-center gap-5">
@@ -162,6 +191,8 @@ export default function Requests({
                       <div
                         key={req._id}
                         onClick={() => {
+                          setShowReviewError(false);
+                          setReviewSubmitted(false);
                           setReviewRequestData(req);
                           setReviewDialogOpen(true);
                         }}
@@ -341,6 +372,7 @@ export default function Requests({
               onSubmit={(event) => {
                 event.preventDefault();
                 setShowCreateErrors(true);
+                setCreateSubmitted(true);
 
                 const formData = new FormData(event.currentTarget);
                 startSubmitTransition(() => {
@@ -353,7 +385,7 @@ export default function Requests({
                 <input
                   type="hidden"
                   name="teamId"
-                  value={userResponse.teamId ?? ""}
+                  value={teamId ?? userResponse.teamId ?? ""}
                 />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <label className="min-w-0 flex flex-col gap-1">
@@ -484,14 +516,25 @@ export default function Requests({
         {reviewDialogOpen && reviewRequestData && (
           <ReviewRequestDialog
             open={reviewDialogOpen}
-            action={reviewAction}
+            action={(formData) => {
+              setShowReviewError(false);
+              setReviewSubmitted(true);
+              reviewAction(formData);
+            }}
             isPending={isReviewPending}
             onClose={() => {
+              setShowReviewError(false);
+              setReviewSubmitted(false);
               setReviewDialogOpen(false);
               setReviewRequestData(null);
             }}
             canReviewRequest={canReviewRequests}
             request={reviewRequestData}
+            error={
+              showReviewError && typeof reviewState.error === "string"
+                ? reviewState.error
+                : null
+            }
           />
         )}
       </div>

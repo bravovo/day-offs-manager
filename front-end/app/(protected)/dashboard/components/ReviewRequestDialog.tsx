@@ -8,6 +8,7 @@ export interface ReviewRequestDialogProps {
   onClose: () => void;
   canReviewRequest: boolean;
   request: Request;
+  error?: string | null;
 }
 
 export default function ReviewRequestDialog({
@@ -17,6 +18,7 @@ export default function ReviewRequestDialog({
   onClose,
   canReviewRequest,
   request,
+  error,
 }: ReviewRequestDialogProps) {
   if (!open || !canReviewRequest) {
     return null;
@@ -115,11 +117,9 @@ export default function ReviewRequestDialog({
               </button>
             </div>
           </div>
-          {/* {showCreateErrors &&
-            createState.error &&
-            typeof createState.error === "string" && (
-              <p className="font-bold text-red-600">{createState.error}</p>
-            )} */}
+          {error && (
+            <p className="font-bold text-red-600">{error}</p>
+          )}
         </div>
       </form>
     </div>

@@ -10,6 +10,7 @@ import User from "../schemas/user.schema.ts";
 import Team from "../schemas/team.schema.ts";
 import {
   dateOnlyToUtcDate,
+  getAvailableDayOffs,
   getDaysInterval,
   isAllowedToMakeRequest,
   type IsAllowedToMakeRequestProps,
@@ -25,6 +26,38 @@ interface CreateRequestProps {
   type: "day" | "sick";
   description?: string;
 }
+
+const getApprovedLeaveUsed = async (
+  teamId: mongoose.Types.ObjectId,
+  userId: mongoose.Types.ObjectId
+) => {
+  const yearStart = new Date(`${new Date().getUTCFullYear()}-01-01T00:00:00.000Z`);
+  const approvedRequests = await Request.find({
+    teamId,
+    userId,
+    status: "approved",
+    startDate: { $gte: yearStart },
+  }).select("startDate endDate halfDay type");
+
+  let day = 0;
+  let sick = 0;
+
+  for (const request of approvedRequests) {
+    const interval = getDaysInterval(
+      new Date(request.startDate),
+      new Date(request.endDate)
+    );
+    const usedDays = request.halfDay ? interval * 0.5 : interval;
+
+    if (request.type === "day") {
+      day += usedDays;
+    } else {
+      sick += usedDays;
+    }
+  }
+
+  return { day, sick };
+};
 
 export const createRequestService = async (payload: CreateRequestProps) => {
   if (!mongoose.isValidObjectId(payload.userId)) {
@@ -58,20 +91,25 @@ export const createRequestService = async (payload: CreateRequestProps) => {
     throw new ErrorExtended(404, "Помилка ідентифікації користувача");
   }
 
-  console.log("TEAM", team);
-  console.log("TEAM MEMBER", teamMember);
-
-  console.log(team.maxSick, teamMember.sick);
+  const approvedLeaveUsed = await getApprovedLeaveUsed(
+    team._id,
+    teamMember.memberId
+  );
+  const availableDayOffs = getAvailableDayOffs(
+    team.maxOff,
+    team.system,
+    new Date(payload.startDate)
+  );
 
   const allowanceCheckPayload: IsAllowedToMakeRequestProps = {
     startDate: new Date(payload.startDate),
     endDate: new Date(payload.endDate),
     halfDay: Boolean(payload.halfDay),
     type: payload.type,
-    maxOff: team.maxOff,
+    maxOff: availableDayOffs,
     maxSick: team.maxSick,
-    day: teamMember.day,
-    sick: teamMember.sick,
+    day: approvedLeaveUsed.day,
+    sick: approvedLeaveUsed.sick,
   };
 
   if (!isAllowedToMakeRequest({ ...allowanceCheckPayload })) {
@@ -133,6 +171,7 @@ export interface GetRequestsProps {
   status?: RequestStatus;
   authorId?: string;
   type?: RequestType;
+  teamId?: string;
   requesterId: string;
 }
 
@@ -140,6 +179,7 @@ export const getRequestsService = async ({
   status,
   authorId,
   type,
+  teamId,
   requesterId,
 }: GetRequestsProps) => {
   const userFilters = [...(authorId ? [{ userId: authorId }] : [])];
@@ -153,6 +193,7 @@ export const getRequestsService = async ({
   const requests = await Request.find({
     ...(status ? { status } : {}),
     ...(type ? { type } : {}),
+    ...(teamId ? { teamId } : {}),
     ...(userFilters.length ? { $and: userFilters } : {}),
   });
 
@@ -256,9 +297,15 @@ export const patchMarkRequestService = async ({
   if (!request) {
     throw new ErrorExtended(404, "Запит не знайдено");
   }
+  if (request.status !== "pending") {
+    throw new ErrorExtended(
+      400,
+      "Статус запиту вже змінено і не може бути змінений повторно"
+    );
+  }
 
   const team = await Team.findById(request.teamId).select(
-    "maxOff maxSick members"
+    "maxOff maxSick system members"
   );
   if (!team) {
     throw new ErrorExtended(404, "Команду не знайдено");
@@ -288,24 +335,6 @@ export const patchMarkRequestService = async ({
     throw new ErrorExtended(404, "Помилка ідентифікації користувача");
   }
 
-  const allowanceCheckPayload: IsAllowedToMakeRequestProps = {
-    startDate: new Date(request.startDate),
-    endDate: new Date(request.endDate),
-    halfDay: Boolean(request.halfDay),
-    type: request.type,
-    maxOff: team.maxOff,
-    maxSick: team.maxSick,
-    day: teamMember.day,
-    sick: teamMember.sick,
-  };
-
-  if (!isAllowedToMakeRequest({ ...allowanceCheckPayload })) {
-    throw new ErrorExtended(
-      400,
-      "Залишок доступних днів замалий для створення запиту"
-    );
-  }
-
   const datesInterval = getDaysInterval(
     new Date(request.startDate),
     new Date(request.endDate)
@@ -313,6 +342,38 @@ export const patchMarkRequestService = async ({
   const finalInterval = Boolean(request.halfDay)
     ? datesInterval * 0.5
     : datesInterval;
+
+  const shouldConsumeLeave = newStatus === "approved";
+  const balanceDelta = shouldConsumeLeave ? finalInterval : 0;
+
+  if (shouldConsumeLeave) {
+    const approvedLeaveUsed = await getApprovedLeaveUsed(
+      team._id,
+      teamMember.memberId
+    );
+    const availableDayOffs = getAvailableDayOffs(
+      team.maxOff,
+      team.system,
+      new Date(request.startDate)
+    );
+    const allowanceCheckPayload: IsAllowedToMakeRequestProps = {
+      startDate: new Date(request.startDate),
+      endDate: new Date(request.endDate),
+      halfDay: Boolean(request.halfDay),
+      type: request.type,
+      maxOff: availableDayOffs,
+      maxSick: team.maxSick,
+      day: approvedLeaveUsed.day,
+      sick: approvedLeaveUsed.sick,
+    };
+
+    if (!isAllowedToMakeRequest({ ...allowanceCheckPayload })) {
+      throw new ErrorExtended(
+        400,
+        "Залишок доступних днів замалий для створення запиту"
+      );
+    }
+  }
 
   let updatedRequest = null;
   let updatedTeamMember = null;
@@ -330,23 +391,27 @@ export const patchMarkRequestService = async ({
       throw new ErrorExtended(500, "Помилка оновлення статусу запиту");
     }
 
-    updatedTeamMember = await Team.findOneAndUpdate(
-      {
-        members: {
-          $elemMatch: {
-            memberId: teamMember.memberId,
-          },
-        },
-      },
-      request.type === "day"
-        ? {
-            day: teamMember.day + finalInterval,
-          }
-        : {
-            sick: teamMember.sick + finalInterval,
-          },
-      { returnDocument: "after", session }
-    );
+    const balanceField = request.type === "day" ? "day" : "sick";
+    const currentBalance =
+      request.type === "day" ? teamMember.day : teamMember.sick;
+    const newBalance = Math.max(0, currentBalance + balanceDelta);
+
+    updatedTeamMember =
+      balanceDelta === 0
+        ? team
+        : await Team.findOneAndUpdate(
+            { _id: team._id },
+            {
+              $set: {
+                [`members.$[member].${balanceField}`]: newBalance,
+              },
+            },
+            {
+              arrayFilters: [{ "member.memberId": teamMember.memberId }],
+              returnDocument: "after",
+              session,
+            }
+          );
     if (!updatedTeamMember) {
       throw new ErrorExtended(500, "Помилка оновлення статусу запиту");
     }
@@ -360,4 +425,61 @@ export const patchMarkRequestService = async ({
   }
 
   return { updatedRequest, updatedTeamMember };
+};
+
+export interface GetRemainsProps {
+  userId: string;
+  teamId: string;
+}
+
+export const getRemainsService = async ({
+  userId,
+  teamId,
+}: GetRemainsProps) => {
+  if (!mongoose.isValidObjectId(userId)) {
+    throw new ErrorExtended(400, "Ідентифікатор користувача недійсний");
+  }
+  if (!mongoose.isValidObjectId(teamId)) {
+    throw new ErrorExtended(400, "Ідентифікатор команди недійсний");
+  }
+
+  const user = await User.findById(userId).select("_id");
+
+  if (!user) {
+    throw new ErrorExtended(404, "Користувача не знайдено");
+  }
+
+  const team = await Team.findOne({
+    _id: teamId,
+    "members.memberId": user._id,
+  });
+
+  if (!team) {
+    throw new ErrorExtended(404, "Користувач не є членом команди");
+  }
+
+  const teamMember = team.members.find(
+    (member) => String(member.memberId) === String(user._id)
+  );
+
+  if (!teamMember) {
+    throw new ErrorExtended(404, "Помилка ідентифікації користувача");
+  }
+
+  const approvedLeaveUsed = await getApprovedLeaveUsed(
+    team._id,
+    teamMember.memberId
+  );
+  const accumulatedDayOffs = getAvailableDayOffs(
+    team.maxOff,
+    team.system
+  );
+
+  return {
+    day: Math.max(0, accumulatedDayOffs - approvedLeaveUsed.day),
+    sick: Math.max(0, team.maxSick - approvedLeaveUsed.sick),
+    maxDayOffs: team.maxOff,
+    maxSick: team.maxSick,
+    system: team.system,
+  };
 };

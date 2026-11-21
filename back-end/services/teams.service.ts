@@ -83,12 +83,7 @@ export const getSuperAdminTeamsService = async (userId: string) => {
   }
 
   const teams = await MongoTeam.find({
-    members: {
-      $elemMatch: {
-        memberId: userId,
-        role: "super",
-      },
-    },
+    "members.memberId": userId,
   }).populate({
     path: "members.memberId",
     select: "firstName lastName email",
